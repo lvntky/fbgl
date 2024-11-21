@@ -41,7 +41,7 @@ char const *fbgl_version_info(void);
 
 /*Create and destroy methods*/
 int fbgl_init(const char *device, fbgl_t *fb);
-void fbgl_destroy(void);
+void fbgl_destroy(fbgl_t *fb);
 
 /**
 * Drawing functions
@@ -49,6 +49,7 @@ void fbgl_destroy(void);
 void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color);
 void fbgl_draw_line(int x0, int y0, int x1, int y1, uint32_t color);
+void fbgl_set_bg();
 
 /**
 * Display methods
@@ -76,11 +77,71 @@ char const *fbgl_version_info(void)
 
 int fbgl_init(const char *device, fbgl_t *fb)
 {
+	if (!fb) {
+		fprintf(stderr, "Error: fbgl_t pointer is NULL.");
+		return -1;
+	}
+
 	fb->fd = device == NULL ? open(DEFAULT_FB, O_RDWR) :
 				  open(device, O_RDWR);
 	if (fb->fd == -1) {
 		perror("Error openning framebuffer device");
 		return -1;
+	}
+
+	if (ioctl(fb->fd, FBIOGET_FSCREENINFO, &fb->finfo) == -1) {
+		perror("Error: Reading fixed information."); close(fb->fd);
+		return -1;
+	}
+	if (ioctl(fb->fd, FBIOGET_VSCREENINFO, &fb->vinfo) == -1) {
+		perror("Error reading variable information");
+		close(fb->fd);
+		return -1;
+	}
+
+	fb->width = fb->vinfo.xres;
+	fb->height = fb->vinfo.yres;
+	fb->screen_size = fb->finfo.smem_len;
+
+	// Map framebuffer to memory
+	fb->pixels = (uint32_t *)mmap(NULL, fb->screen_size,
+				      PROT_READ | PROT_WRITE, MAP_SHARED,
+				      fb->fd, 0);
+	if (fb->pixels == MAP_FAILED) {
+		perror("Error mapping framebuffer device to memory");
+		close(fb->fd);
+		return -1;
+	}
+
+	return 0;
+}
+
+void fbgl_destroy(fbgl_t *fb)
+{
+	if (!fb || fb->fd == -1) {
+		fprintf(stderr,
+			"Error: framebuffer not initialized or already destroyed.\n");
+		return;
+	}
+
+	if (fb->pixels && fb->pixels != MAP_FAILED) {
+		munmap(fb->pixels, fb->screen_size);
+	}
+
+	close(fb->fd);
+	fb->fd = -1;
+}
+
+void fbgl_set_bg(fbgl_t *fb, uint32_t color)
+{
+	if (!fb || fb->fd == -1) {
+		fprintf(stderr, "Error: framebuffer not initialized.\n");
+		return;
+	}
+
+	// Fill the entire framebuffer with the specified color
+	for (size_t i = 0; i < (fb->width * fb->height); ++i) {
+		fb->pixels[i] = color;
 	}
 }
 
