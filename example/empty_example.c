@@ -1,5 +1,6 @@
 #define FBGL_IMPLEMENTATION
 //#define FBGL_HIDE_CURSOR
+#define FBGL_USE_FREETYPE
 #include "../fbgl.h"
 
 #include <stdio.h>
@@ -18,20 +19,21 @@ int main()
 
     fbgl_set_bg(&buffer, 0xFFFFFF); // Set background color to red
 
- 
-
-    // Load the PSF2 font
-    fbgl_psf2_header_t *font = fbgl_load_psf2_font("../asset/font.psf");
-    if (!font) {
-        fprintf(stderr, "Error: failed to load PSF2 font.\n");
+    FT_Library library = fbgl_freetype_init();
+    if (!library) {
         fbgl_destroy(&buffer);
         return -1;
     }
 
-    printf("Loaded PSF2 Font: %d glyphs, %dx%d px per character\n", font->numglyphs, font->width, font->height);
+    FT_Face face = fbgl_load_font(library, "../asset/font_2.ttf", 24);  // Adjust path and size
+    if (!face) {
+        fbgl_freetype_cleanup(library);
+        fbgl_destroy(&buffer);
+        return -1;
+    }
 
-    // Render sample text
-    fbgl_render_text(&buffer, buffer.width, buffer.height, 100, 100, "Hello, framebuffer!", font);
+    // Render text to framebuffer
+    fbgl_render_freetype_text(&buffer, library, face, "Hello, World!", 50, 50);
 
     // Main loop checking for ESC key
     int l = 0;
@@ -41,10 +43,6 @@ int main()
             break;
         }
     }
-
-    // Free the font memory
-    fbgl_free_psf2_font(font);
-
     fbgl_destroy(&buffer);
     return 0;
 }

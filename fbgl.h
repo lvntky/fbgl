@@ -18,6 +18,11 @@
 #include <termios.h>
 #include <signal.h>
 
+#ifdef FBGL_USE_FREETYPE
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#endif //FBGL_USE_FREETYPE
+
 static struct termios orig_termios;
 
 /**
@@ -74,6 +79,13 @@ int fbgl_hide_cursor(int fd)
 }
 #endif //FBGL_HIDE_CURSOR
 
+#ifdef FBGL_USE_FREETYPE
+FT_Library fbgl_freetype_init();
+void fbgl_freetype_cleanup(FT_Library library);
+FT_Face fbgl_load_font(FT_Library library, const char *font_path, int font_size);
+void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face, const char *text, int x, int y);
+#endif //FBGL_USE_FREETYPE
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -112,16 +124,6 @@ void fbgl_display();
 uint32_t *fb_get_data(void);
 int fb_get_width(void);
 int fb_get_height(void);
-
-/**
-* PSF2 Font Methods
-*/
-fbgl_psf2_header_t *fbgl_load_psf2_font(const char *font_file);
-void fbgl_render_char(fbgl_t *framebuffer, int fb_width, int fb_height, int x,
-		      int y, char ch, fbgl_psf2_header_t *font);
-void fbgl_render_text(fbgl_t *framebuffer, int fb_width, int fb_height, int x,
-		      int y, const char *text, fbgl_psf2_header_t *font);
-void fbgl_free_psf2_font(fbgl_psf2_header_t *font);
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -300,84 +302,53 @@ void fbgl_set_signal_handlers()
 	}
 }
 
-fbgl_psf2_header_t *fbgl_load_psf2_font(const char *font_file)
-{
-	fbgl_psf2_header_t *font = NULL;
-	int fd = open(font_file, O_RDONLY);
-	if (fd == -1) {
-		perror("Error opening font file");
-		return NULL;
-	}
+#endif
 
-	// Read the font header
-	font = (fbgl_psf2_header_t *)malloc(sizeof(fbgl_psf2_header_t));
-	if (read(fd, font, sizeof(fbgl_psf2_header_t)) !=
-	    sizeof(fbgl_psf2_header_t)) {
-		perror("Error reading font header");
-		free(font);
-		close(fd);
-		return NULL;
-	}
-
-	// Check magic number
-	if (font->magic[0] != 0x72 || font->magic[1] != 0xB5) {
-		fprintf(stderr, "Invalid PSF2 font magic number.\n");
-		free(font);
-		close(fd);
-		return NULL;
-	}
-
-	// Read the font glyph data
-	font->glyphs =
-		(uint8_t *)malloc(font->numglyphs * font->bytes_per_glyph);
-	if (read(fd, font->glyphs, font->numglyphs * font->bytes_per_glyph) !=
-	    font->numglyphs * font->bytes_per_glyph) {
-		perror("Error reading glyph data");
-		free(font->glyphs);
-		free(font);
-		close(fd);
-		return NULL;
-	}
-
-	close(fd);
-	return font;
+#ifdef FBGL_USE_FREETYPE
+FT_Library fbgl_freetype_init() {
+    FT_Library library;
+    if (FT_Init_FreeType(&library)) {
+        fprintf(stderr, "Could not init FreeType Library\n");
+        return NULL;
     }
+    return library;
+}
 
-    void fbgl_render_char(fbgl_t *framebuffer, int fb_width, int fb_height, int x, int y, char ch, fbgl_psf2_header_t *font)
-{
-    if (!framebuffer || !font) return;
-
-    int glyph_idx = (uint8_t)ch; // Get the glyph index for the character
-    if (glyph_idx >= font->numglyphs) return;
-
-    uint8_t *glyph_data = font->glyphs + (glyph_idx * font->bytes_per_glyph);
-    for (int j = 0; j < font->height; ++j) {
-        for (int i = 0; i < font->width; ++i) {
-            if (glyph_data[j] & (1 << (7 - i))) {
-                fbgl_put_pixel(x + i, y + j, 0xFFFFFF, framebuffer);
-            }
-        }
+void fbgl_freetype_cleanup(FT_Library library) {
+    if (library) {
+        FT_Done_FreeType(library);
     }
 }
 
-void fbgl_render_text(fbgl_t *framebuffer, int fb_width, int fb_height, int x, int y, const char *text, fbgl_psf2_header_t *font)
-{
+FT_Face fbgl_load_font(FT_Library library, const char *font_path, int font_size) {
+    FT_Face face;
+    if (FT_New_Face(library, font_path, 0, &face)) {
+        fprintf(stderr, "Could not open font: %s\n", font_path);
+        return NULL;
+    }
+    FT_Set_Pixel_Sizes(face, 0, font_size);  // Set font size
+    return face;
+}
+
+void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face, const char *text, int x, int y) {
     while (*text) {
-        fbgl_render_char(framebuffer, fb_width, fb_height, x, y, *text, font);
-        x += font->width;
+        FT_Load_Char(face, *text, FT_LOAD_RENDER);
+        FT_Bitmap bitmap = face->glyph->bitmap;
+        
+        // Draw the bitmap to framebuffer
+        for (int j = 0; j < bitmap.rows; j++) {
+            for (int i = 0; i < bitmap.width; i++) {
+                if (bitmap.buffer[j * bitmap.width + i]) { // Check pixel is not empty
+                    fbgl_put_pixel(x + i, y + j, 0xFF0000, fb);  // Draw white pixel
+                }
+            }
+        }
+        x += face->glyph->advance.x >> 6;  // Move to the next character position
         ++text;
     }
 }
 
-void fbgl_free_psf2_font(fbgl_psf2_header_t *font)
-{
-    if (font) {
-        free(font->glyphs);
-        free(font);
-    }
-}
-
-#endif
+#endif // FBGL_USE_FREETYPE
 
 #ifdef __cplusplus
 } // extern "C"
