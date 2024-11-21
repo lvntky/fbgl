@@ -41,6 +41,18 @@ typedef struct fbgl_window {
 	fbgl_t *fb; // Pointer to the framebuffer context
 } fbgl_window_t;
 
+typedef struct fbgl_psf2_header {
+	uint8_t magic[2]; // Magic number, should be {0x72, 0xB5}
+	uint8_t version; // Version of PSF2 (usually 0)
+	uint8_t header_size; // Size of the header (usually 32 bytes)
+	uint16_t flags; // Flags (usually 0)
+	uint16_t numglyphs; // Number of glyphs (characters)
+	uint16_t bytes_per_glyph; // Number of bytes per glyph (depends on font size)
+	uint16_t height; // Height of each character in pixels
+	uint16_t width; // Width of each character in pixels
+	uint8_t *glyphs; // Pointer to the glyph data
+} fbgl_psf2_header_t;
+
 #ifdef FBGL_HIDE_CURSOR
 #include <linux/kd.h>
 int fbgl_hide_cursor(int fd)
@@ -75,7 +87,7 @@ void fbgl_enable_raw_mode();
 void fbgl_disable_raw_mode();
 void fbgl_cleanup(int sig);
 int fbgl_check_esc_key();
-void fbgl_set_signal_handlers(); 
+void fbgl_set_signal_handlers();
 
 /*Create and destroy methods*/
 int fbgl_init(const char *device, fbgl_t *fb);
@@ -100,6 +112,16 @@ void fbgl_display();
 uint32_t *fb_get_data(void);
 int fb_get_width(void);
 int fb_get_height(void);
+
+/**
+* PSF2 Font Methods
+*/
+fbgl_psf2_header_t *fbgl_load_psf2_font(const char *font_file);
+void fbgl_render_char(fbgl_t *framebuffer, int fb_width, int fb_height, int x,
+		      int y, char ch, fbgl_psf2_header_t *font);
+void fbgl_render_text(fbgl_t *framebuffer, int fb_width, int fb_height, int x,
+		      int y, const char *text, fbgl_psf2_header_t *font);
+void fbgl_free_psf2_font(fbgl_psf2_header_t *font);
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -139,9 +161,9 @@ int fbgl_init(const char *device, fbgl_t *fb)
 	}
 
 #ifdef FBGL_HIDE_CURSOR
-fbgl_hide_cursor(fb->fd);
- fbgl_set_signal_handlers();
-    fbgl_enable_raw_mode();
+	fbgl_hide_cursor(fb->fd);
+	fbgl_set_signal_handlers();
+	fbgl_enable_raw_mode();
 #endif //FBGL_HIDE_CURSOR
 
 	fb->width = fb->vinfo.xres;
@@ -176,9 +198,9 @@ void fbgl_destroy(fbgl_t *fb)
 	close(fb->fd);
 	fb->fd = -1;
 
-	#ifdef FBGL_HIDE_CURSOR
+#ifdef FBGL_HIDE_CURSOR
 	fbgl_disable_raw_mode();
-	#endif // FBGL_HIDE_CURSOR
+#endif // FBGL_HIDE_CURSOR
 }
 
 void fbgl_set_bg(fbgl_t *fb, uint32_t color)
@@ -207,76 +229,153 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 
 	size_t index = y * fb->width + x;
 	fb->pixels[index] = color;
-    }
+}
 
-    void fbgl_enable_raw_mode()
+void fbgl_enable_raw_mode()
 {
-    struct termios raw;
+	struct termios raw;
 
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-        perror("tcgetattr");
-        exit(EXIT_FAILURE);
-    }
-    raw = orig_termios;
-    raw.c_lflag &= ~(ECHO | ICANON);
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-        perror("tcsetattr");
-        exit(EXIT_FAILURE);
-    }
+	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+		perror("tcgetattr");
+		exit(EXIT_FAILURE);
+	}
+	raw = orig_termios;
+	raw.c_lflag &= ~(ECHO | ICANON);
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+		perror("tcsetattr");
+		exit(EXIT_FAILURE);
+	}
 }
 
 void fbgl_disable_raw_mode()
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
-        perror("tcsetattr");
-    }
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+		perror("tcsetattr");
+	}
 }
 
 void fbgl_cleanup(int sig)
 {
-    fbgl_disable_raw_mode();
-    printf("\033[2J\033[H"); // Clear the terminal screen and move the cursor to top-left
-    exit(sig);
+	fbgl_disable_raw_mode();
+	printf("\033[2J\033[H"); // Clear the terminal screen and move the cursor to top-left
+	exit(sig);
 }
 
 int fbgl_check_esc_key()
 {
-    char c;
-    struct timeval tv = {0, 0};
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(STDIN_FILENO, &fds);
+	char c;
+	struct timeval tv = { 0, 0 };
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(STDIN_FILENO, &fds);
 
-    // Check if there's input available
-    if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) == -1) {
-        perror("select");
-        return 0;
-    }
+	// Check if there's input available
+	if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) == -1) {
+		perror("select");
+		return 0;
+	}
 
-    if (FD_ISSET(STDIN_FILENO, &fds)) {
-        if (read(STDIN_FILENO, &c, 1) == -1) {
-            perror("read");
-            return 0;
-        }
-        return c == 27; // ASCII value of the `Esc` key
-    }
+	if (FD_ISSET(STDIN_FILENO, &fds)) {
+		if (read(STDIN_FILENO, &c, 1) == -1) {
+			perror("read");
+			return 0;
+		}
+		return c == 27; // ASCII value of the `Esc` key
+	}
 
-    return 0;
+	return 0;
 }
 
 void fbgl_set_signal_handlers()
 {
-    struct sigaction sa;
-    sa.sa_handler = fbgl_cleanup;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
+	struct sigaction sa;
+	sa.sa_handler = fbgl_cleanup;
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
 
-    if (sigaction(SIGINT, &sa, NULL) == -1 || sigaction(SIGTERM, &sa, NULL) == -1) {
-        perror("sigaction");
-        exit(EXIT_FAILURE);
+	if (sigaction(SIGINT, &sa, NULL) == -1 ||
+	    sigaction(SIGTERM, &sa, NULL) == -1) {
+		perror("sigaction");
+		exit(EXIT_FAILURE);
+	}
+}
+
+fbgl_psf2_header_t *fbgl_load_psf2_font(const char *font_file)
+{
+	fbgl_psf2_header_t *font = NULL;
+	int fd = open(font_file, O_RDONLY);
+	if (fd == -1) {
+		perror("Error opening font file");
+		return NULL;
+	}
+
+	// Read the font header
+	font = (fbgl_psf2_header_t *)malloc(sizeof(fbgl_psf2_header_t));
+	if (read(fd, font, sizeof(fbgl_psf2_header_t)) !=
+	    sizeof(fbgl_psf2_header_t)) {
+		perror("Error reading font header");
+		free(font);
+		close(fd);
+		return NULL;
+	}
+
+	// Check magic number
+	if (font->magic[0] != 0x72 || font->magic[1] != 0xB5) {
+		fprintf(stderr, "Invalid PSF2 font magic number.\n");
+		free(font);
+		close(fd);
+		return NULL;
+	}
+
+	// Read the font glyph data
+	font->glyphs =
+		(uint8_t *)malloc(font->numglyphs * font->bytes_per_glyph);
+	if (read(fd, font->glyphs, font->numglyphs * font->bytes_per_glyph) !=
+	    font->numglyphs * font->bytes_per_glyph) {
+		perror("Error reading glyph data");
+		free(font->glyphs);
+		free(font);
+		close(fd);
+		return NULL;
+	}
+
+	close(fd);
+	return font;
+    }
+
+    void fbgl_render_char(fbgl_t *framebuffer, int fb_width, int fb_height, int x, int y, char ch, fbgl_psf2_header_t *font)
+{
+    if (!framebuffer || !font) return;
+
+    int glyph_idx = (uint8_t)ch; // Get the glyph index for the character
+    if (glyph_idx >= font->numglyphs) return;
+
+    uint8_t *glyph_data = font->glyphs + (glyph_idx * font->bytes_per_glyph);
+    for (int j = 0; j < font->height; ++j) {
+        for (int i = 0; i < font->width; ++i) {
+            if (glyph_data[j] & (1 << (7 - i))) {
+                fbgl_put_pixel(x + i, y + j, 0xFFFFFF, framebuffer);
+            }
+        }
     }
 }
 
+void fbgl_render_text(fbgl_t *framebuffer, int fb_width, int fb_height, int x, int y, const char *text, fbgl_psf2_header_t *font)
+{
+    while (*text) {
+        fbgl_render_char(framebuffer, fb_width, fb_height, x, y, *text, font);
+        x += font->width;
+        ++text;
+    }
+}
+
+void fbgl_free_psf2_font(fbgl_psf2_header_t *font)
+{
+    if (font) {
+        free(font->glyphs);
+        free(font);
+    }
+}
 
 #endif
 
