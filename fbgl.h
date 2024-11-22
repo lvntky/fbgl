@@ -58,6 +58,11 @@ typedef struct fbgl_psf2_header {
 	uint8_t *glyphs; // Pointer to the glyph data
 } fbgl_psf2_header_t;
 
+typedef struct fbgl_point {
+	size_t x;
+	size_t y;
+} fbgl_point_t;
+
 #ifdef FBGL_HIDE_CURSOR
 #include <linux/kd.h>
 int fbgl_hide_cursor(int fd)
@@ -82,8 +87,10 @@ int fbgl_hide_cursor(int fd)
 #ifdef FBGL_USE_FREETYPE
 FT_Library fbgl_freetype_init();
 void fbgl_freetype_cleanup(FT_Library library);
-FT_Face fbgl_load_font(FT_Library library, const char *font_path, int font_size);
-void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face, const char *text, int x, int y);
+FT_Face fbgl_load_font(FT_Library library, const char *font_path,
+		       int font_size);
+void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
+			       const char *text, int x, int y);
 #endif //FBGL_USE_FREETYPE
 
 #ifdef __cplusplus
@@ -110,7 +117,7 @@ void fbgl_destroy(fbgl_t *fb);
 */
 void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb);
-void fbgl_draw_line(int x0, int y0, int x1, int y1, uint32_t color);
+void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t* fb);
 void fbgl_set_bg();
 
 /**
@@ -305,50 +312,89 @@ void fbgl_set_signal_handlers()
 #endif
 
 #ifdef FBGL_USE_FREETYPE
-FT_Library fbgl_freetype_init() {
-    FT_Library library;
-    if (FT_Init_FreeType(&library)) {
-        fprintf(stderr, "Could not init FreeType Library\n");
-        return NULL;
-    }
-    return library;
+FT_Library fbgl_freetype_init()
+{
+	FT_Library library;
+	if (FT_Init_FreeType(&library)) {
+		fprintf(stderr, "Could not init FreeType Library\n");
+		return NULL;
+	}
+	return library;
 }
 
-void fbgl_freetype_cleanup(FT_Library library) {
-    if (library) {
-        FT_Done_FreeType(library);
-    }
+void fbgl_freetype_cleanup(FT_Library library)
+{
+	if (library) {
+		FT_Done_FreeType(library);
+	}
 }
 
-FT_Face fbgl_load_font(FT_Library library, const char *font_path, int font_size) {
-    FT_Face face;
-    if (FT_New_Face(library, font_path, 0, &face)) {
-        fprintf(stderr, "Could not open font: %s\n", font_path);
-        return NULL;
-    }
-    FT_Set_Pixel_Sizes(face, 0, font_size);  // Set font size
-    return face;
+FT_Face fbgl_load_font(FT_Library library, const char *font_path, int font_size)
+{
+	FT_Face face;
+	if (FT_New_Face(library, font_path, 0, &face)) {
+		fprintf(stderr, "Could not open font: %s\n", font_path);
+		return NULL;
+	}
+	FT_Set_Pixel_Sizes(face, 0, font_size); // Set font size
+	return face;
 }
 
-void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face, const char *text, int x, int y) {
-    while (*text) {
-        FT_Load_Char(face, *text, FT_LOAD_RENDER);
-        FT_Bitmap bitmap = face->glyph->bitmap;
-        
-        // Draw the bitmap to framebuffer
-        for (int j = 0; j < bitmap.rows; j++) {
-            for (int i = 0; i < bitmap.width; i++) {
-                if (bitmap.buffer[j * bitmap.width + i]) { // Check pixel is not empty
-                    fbgl_put_pixel(x + i, y + j, 0xFF0000, fb);  // Draw white pixel
-                }
-            }
-        }
-        x += face->glyph->advance.x >> 6;  // Move to the next character position
-        ++text;
-    }
+void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
+			       const char *text, int x, int y)
+{
+	while (*text) {
+		FT_Load_Char(face, *text, FT_LOAD_RENDER);
+		FT_Bitmap bitmap = face->glyph->bitmap;
+
+		// Draw the bitmap to framebuffer
+		for (int j = 0; j < bitmap.rows; j++) {
+			for (int i = 0; i < bitmap.width; i++) {
+				if (bitmap.buffer[j * bitmap.width +
+						  i]) { // Check pixel is not empty
+					fbgl_put_pixel(x + i, y + j, 0xFF0000,
+						       fb); // Draw white pixel
+				}
+			}
+		}
+		x += face->glyph->advance.x >>
+		     6; // Move to the next character position
+		++text;
+	}
 }
 
 #endif // FBGL_USE_FREETYPE
+void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *buffer)
+{
+	int dx = abs(y.x - x.x);
+	int dy = abs(y.y - x.y);
+
+	int sx = (x.x < y.x) ? 1 : -1;
+	int sy = (x.y < y.y) ? 1 : -1;
+
+	int err = dx - dy;
+
+	while (1) {
+		// Set the pixel at the current position
+		fbgl_put_pixel(x.x, x.y, color, buffer);
+
+		// If we've reached the end point, break
+		if (x.x == y.x && x.y == y.y)
+			break;
+
+		int e2 = 2 * err;
+
+		if (e2 > -dy) {
+			err -= dy;
+			x.x += sx;
+		}
+
+		if (e2 < dx) {
+			err += dx;
+			x.y += sy;
+		}
+	}
+}
 
 #ifdef __cplusplus
 } // extern "C"

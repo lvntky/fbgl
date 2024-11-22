@@ -16,8 +16,8 @@ int main()
         fprintf(stdout, "Error: could not open framebuffer device\n");
         return -1;
     }
+    int color = 0x00000000;
 
-    fbgl_set_bg(&buffer, 0xFFFFFF); // Set background color to red
 
     FT_Library library = fbgl_freetype_init();
     if (!library) {
@@ -38,10 +38,15 @@ int main()
     // Main loop checking for ESC key
     int l = 0;
     while (1) {
+	    
         if (fbgl_check_esc_key()) {
             fprintf(stdout, "ESC pressed\n");
             break;
         }
+	    //fbgl_set_bg(&buffer, i++); // Set background color to 
+    	for(int i = 0x000000; i <= 0xFFFFFF; i++) {
+		fbgl_set_bg(&buffer, i);
+	}
     }
     fbgl_destroy(&buffer);
     return 0;
