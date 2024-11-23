@@ -273,7 +273,7 @@ void fbgl_cleanup(int sig)
 int fbgl_check_esc_key()
 {
 	char c;
-	struct timeval tv = { 0, 0 };
+	struct timeval tv = { 0, 0 }; // Timeout of 0, to poll immediately
 	fd_set fds;
 	FD_ZERO(&fds);
 	FD_SET(STDIN_FILENO, &fds);
