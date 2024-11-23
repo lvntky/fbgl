@@ -117,7 +117,7 @@ void fbgl_destroy(fbgl_t *fb);
 */
 void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb);
-void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t* fb);
+void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *fb);
 void fbgl_set_bg();
 
 /**
@@ -131,6 +131,16 @@ void fbgl_display();
 uint32_t *fb_get_data(void);
 int fb_get_width(void);
 int fb_get_height(void);
+
+/**
+* Shapes
+*/
+void fbgl_draw_rectangle_outline(fbgl_point_t top_left,
+				 fbgl_point_t bottom_right, uint32_t color,
+				 fbgl_t *fb);
+void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
+				fbgl_point_t bottom_right, uint32_t color,
+				fbgl_t *fb);
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -364,7 +374,8 @@ void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
 }
 
 #endif // FBGL_USE_FREETYPE
-void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *buffer)
+void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color,
+		    fbgl_t *buffer)
 {
 	int dx = abs(y.x - x.x);
 	int dy = abs(y.y - x.y);
@@ -394,6 +405,36 @@ void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *buff
 			x.y += sy;
 		}
 	}
+}
+void fbgl_draw_rectangle_outline(fbgl_point_t top_left, fbgl_point_t bottom_right, uint32_t color, fbgl_t *fb) {
+    // Top horizontal line
+    for (int x = top_left.x; x < bottom_right.x; x++) {
+        fbgl_put_pixel(x, top_left.y, color, fb);
+    }
+
+    // Bottom horizontal line
+    for (int x = top_left.x; x < bottom_right.x; x++) {
+        fbgl_put_pixel(x, bottom_right.y - 1, color, fb);
+    }
+
+    // Left vertical line
+    for (int y = top_left.y; y < bottom_right.y; y++) {
+        fbgl_put_pixel(top_left.x, y, color, fb);
+    }
+
+    // Right vertical line
+    for (int y = top_left.y; y < bottom_right.y; y++) {
+        fbgl_put_pixel(bottom_right.x - 1, y, color, fb);
+    }
+}
+
+void fbgl_draw_rectangle_filled(fbgl_point_t top_left, fbgl_point_t bottom_right, uint32_t color, fbgl_t *fb) {
+    for (int y = top_left.y; y < bottom_right.y; y++) {
+        // Manually set each pixel in the row
+        for (int x = top_left.x; x < bottom_right.x; x++) {
+            fbgl_put_pixel(x, y, color, fb);
+        }
+    }
 }
 
 #ifdef __cplusplus
