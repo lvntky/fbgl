@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <termios.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #ifdef FBGL_USE_FREETYPE
 #include <ft2build.h>
@@ -62,6 +63,12 @@ typedef struct fbgl_point {
 	size_t x;
 	size_t y;
 } fbgl_point_t;
+
+typedef struct fbgl_tga_texture {
+	uint16_t width;
+	uint16_t height;
+	uint32_t *data;
+} fbgl_tga_texture_t;
 
 #ifdef FBGL_HIDE_CURSOR
 #include <linux/kd.h>
@@ -141,6 +148,13 @@ void fbgl_draw_rectangle_outline(fbgl_point_t top_left,
 void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
 				fbgl_point_t bottom_right, uint32_t color,
 				fbgl_t *fb);
+
+/**
+				* texture
+				*/
+fbgl_tga_texture_t *fbgl_load_tga_texture(const char *path);
+void fbgl_destroy_texture(fbgl_tga_texture_t *texture);
+void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t *texture, int x, int y);
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -406,37 +420,181 @@ void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color,
 		}
 	}
 }
-void fbgl_draw_rectangle_outline(fbgl_point_t top_left, fbgl_point_t bottom_right, uint32_t color, fbgl_t *fb) {
-    // Top horizontal line
-    for (int x = top_left.x; x < bottom_right.x; x++) {
-        fbgl_put_pixel(x, top_left.y, color, fb);
-    }
+void fbgl_draw_rectangle_outline(fbgl_point_t top_left,
+				 fbgl_point_t bottom_right, uint32_t color,
+				 fbgl_t *fb)
+{
+	// Top horizontal line
+	for (int x = top_left.x; x < bottom_right.x; x++) {
+		fbgl_put_pixel(x, top_left.y, color, fb);
+	}
 
-    // Bottom horizontal line
-    for (int x = top_left.x; x < bottom_right.x; x++) {
-        fbgl_put_pixel(x, bottom_right.y - 1, color, fb);
-    }
+	// Bottom horizontal line
+	for (int x = top_left.x; x < bottom_right.x; x++) {
+		fbgl_put_pixel(x, bottom_right.y - 1, color, fb);
+	}
 
-    // Left vertical line
-    for (int y = top_left.y; y < bottom_right.y; y++) {
-        fbgl_put_pixel(top_left.x, y, color, fb);
-    }
+	// Left vertical line
+	for (int y = top_left.y; y < bottom_right.y; y++) {
+		fbgl_put_pixel(top_left.x, y, color, fb);
+	}
 
-    // Right vertical line
-    for (int y = top_left.y; y < bottom_right.y; y++) {
-        fbgl_put_pixel(bottom_right.x - 1, y, color, fb);
-    }
+	// Right vertical line
+	for (int y = top_left.y; y < bottom_right.y; y++) {
+		fbgl_put_pixel(bottom_right.x - 1, y, color, fb);
+	}
 }
 
-void fbgl_draw_rectangle_filled(fbgl_point_t top_left, fbgl_point_t bottom_right, uint32_t color, fbgl_t *fb) {
-    for (int y = top_left.y; y < bottom_right.y; y++) {
-        // Manually set each pixel in the row
-        for (int x = top_left.x; x < bottom_right.x; x++) {
-            fbgl_put_pixel(x, y, color, fb);
-        }
-    }
+void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
+				fbgl_point_t bottom_right, uint32_t color,
+				fbgl_t *fb)
+{
+	for (int y = top_left.y; y < bottom_right.y; y++) {
+		// Manually set each pixel in the row
+		for (int x = top_left.x; x < bottom_right.x; x++) {
+			fbgl_put_pixel(x, y, color, fb);
+		}
+	}
+}
+fbgl_tga_texture_t *fbgl_load_tga_texture(const char *path)
+{
+	FILE *file = fopen(path, "rb");
+	if (!file) {
+		perror("Unable to open texture file");
+		return NULL;
+	}
+
+	// TGA header structure
+	uint8_t header[18];
+	if (fread(header, 1, sizeof(header), file) != sizeof(header)) {
+		perror("Error reading TGA header");
+		fclose(file);
+		return NULL;
+	}
+
+	// Allocate texture structure
+	fbgl_tga_texture_t *texture =
+		(fbgl_tga_texture_t *)malloc(sizeof(fbgl_tga_texture_t));
+	if (!texture) {
+		perror("Failed to allocate texture structure");
+		fclose(file);
+		return NULL;
+	}
+
+	// Extract dimensions from header
+	texture->width = header[12] | (header[13] << 8);
+	texture->height = header[14] | (header[15] << 8);
+	uint8_t bits_per_pixel = header[16];
+	uint8_t image_descriptor = header[17];
+
+	// Verify format support
+	if (bits_per_pixel != 24 && bits_per_pixel != 32) {
+		fprintf(stderr,
+			"Unsupported TGA bit depth: %d (only 24 and 32-bit supported)\n",
+			bits_per_pixel);
+		free(texture);
+		fclose(file);
+		return NULL;
+	}
+
+	// Skip image ID field
+	if (header[0]) {
+		fseek(file, header[0], SEEK_CUR);
+	}
+
+	// Allocate pixel data
+	size_t pixel_count = texture->width * texture->height;
+	texture->data = (uint32_t *)malloc(pixel_count * sizeof(uint32_t));
+	if (!texture->data) {
+		perror("Failed to allocate pixel data");
+		free(texture);
+		fclose(file);
+		return NULL;
+	}
+
+	// Read pixel data
+	uint8_t *pixel_buffer = (uint8_t *)malloc(bits_per_pixel / 8);
+	if (!pixel_buffer) {
+		perror("Failed to allocate pixel buffer");
+		free(texture->data);
+		free(texture);
+		fclose(file);
+		return NULL;
+	}
+
+	// Determine if image is flipped (based on image descriptor)
+	bool bottom_up = !(image_descriptor & 0x20);
+
+	for (size_t i = 0; i < pixel_count; i++) {
+		size_t pixel_index =
+			bottom_up ?
+				(texture->height - 1 - (i / texture->width)) *
+						texture->width +
+					(i % texture->width) :
+				i;
+
+		if (fread(pixel_buffer, 1, bits_per_pixel / 8, file) !=
+		    bits_per_pixel / 8) {
+			perror("Error reading pixel data");
+			free(pixel_buffer);
+			free(texture->data);
+			free(texture);
+			fclose(file);
+			return NULL;
+		}
+
+		// Convert BGR(A) to RGBA
+		uint32_t pixel = 0xFF000000; // Default alpha to 255
+		pixel |= pixel_buffer[2] << 16; // R
+		pixel |= pixel_buffer[1] << 8; // G
+		pixel |= pixel_buffer[0]; // B
+		if (bits_per_pixel == 32) {
+			pixel = (pixel & 0x00FFFFFF) |
+				(pixel_buffer[3] << 24); // A
+		}
+
+		texture->data[pixel_index] = pixel;
+	}
+
+	free(pixel_buffer);
+	fclose(file);
+	return texture;
 }
 
+void fbgl_destroy_texture(fbgl_tga_texture_t *texture)
+{
+	if (texture) {
+		free(texture->data);
+		free(texture);
+	}
+}
+
+void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t *texture, int x, int y)
+{
+	if (!fb || !texture || !texture->data) {
+		return;
+	}
+
+	for (int ty = 0; ty < texture->height; ty++) {
+		for (int tx = 0; tx < texture->width; tx++) {
+			int screen_x = x + tx;
+			int screen_y = y + ty;
+
+			// Skip if outside screen bounds
+			if (screen_x < 0 || screen_x >= fb->width ||
+			    screen_y < 0 || screen_y >= fb->height) {
+				continue;
+			}
+
+			uint32_t pixel =
+				texture->data[ty * texture->width + tx];
+			// Only draw if pixel is not fully transparent
+			if ((pixel & 0xFF000000) != 0) {
+				fbgl_put_pixel(screen_x, screen_y, pixel, fb);
+			}
+		}
+	}
+}
 #ifdef __cplusplus
 } // extern "C"
 #endif
