@@ -187,7 +187,7 @@ Contributions are welcome! If you’d like to improve `fbgl`, add features, or f
 ## Showcase
 
 First Texture Rendering
-[![texture Demo](https://img.youtube.com/vi/k0Azuq4W4gc/0.jpg)](https://www.youtube.com/watch?v=k0Azuq4W4gc)
+![fist texture render](./docs/texture.gif)
 
 ---
 
