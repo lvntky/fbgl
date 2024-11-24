@@ -26,6 +26,7 @@
 #define VERSION "0.1.0"
 #define NAME "FBGL"
 #define DEFAULT_FB "/dev/fb0"
+#define #define FBGL_MAX_KEYS 256  // Maximum number of keys to track
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -45,8 +46,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #endif //FBGL_USE_FREETYPE
-
-static struct termios orig_termios;
 
 /**
 * Structs
@@ -91,6 +90,20 @@ typedef struct fbgl_tga_texture {
 	uint16_t height;
 	uint32_t *data;
 } fbgl_tga_texture_t;
+
+typedef struct fbgl_keyboard {
+    bool keys[FBGL_MAX_KEYS];     // Current state of each key
+    bool prev_keys[FBGL_MAX_KEYS]; // Previous state of each key
+    bool is_initialized;           // Track if keyboard is initialized
+} fbgl_keyboard_t;
+
+
+/**
+ * Key state function and variables
+ * 
+ */
+static struct termios orig_termios;
+static fbgl_keyboard_t keyboard = {0};
 
 #ifdef FBGL_HIDE_CURSOR
 #include <linux/kd.h>
@@ -172,11 +185,21 @@ void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
 				fbgl_t *fb);
 
 /**
-				* texture
-				*/
+* texture
+*/
 fbgl_tga_texture_t *fbgl_load_tga_texture(const char *path);
 void fbgl_destroy_texture(fbgl_tga_texture_t *texture);
 void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t *texture, int x, int y);
+
+/**
+ * Keyboard 
+ */
+int fbgl_keyboard_init();
+void fbgl_keyboard_clean();
+void fbgl_keyboard_update();
+bool fbgl_key_pressed(unsigned char key);
+bool fbgl_key_released(unsigned char key);
+bool fbgl_key_down(unsigned char key);
 
 #ifdef FBGL_IMPLEMENTATION
 
