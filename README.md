@@ -187,6 +187,7 @@ Contributions are welcome! If you’d like to improve `fbgl`, add features, or f
 ## Showcase
 
 First Texture Rendering
+
 ![fist texture render](./docs/texture.gif)
 
 ---
