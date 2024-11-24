@@ -1,5 +1,5 @@
 #define FBGL_IMPLEMENTATION
-#include "../fbgl.h"
+#include "fbgl.h"
 
 int main(int argc, char *argv[])
 {
@@ -9,14 +9,13 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	fbgl_set_bg(&buffer, 0xFF0000);
+	fbgl_set_bg(&buffer, 0x00FF0000);
 	fbgl_point_t start = { 0, 0 };
 	fbgl_point_t end = { 1020, 1020 };
 	for (int i = 0; i < 1890; i++) {
 		start.x = i;
 		fbgl_draw_line(start, end, 0xFFFFFF, &buffer);
-		for (int j = 0; j < 10000000; j++) {
-		}
+		usleep(1000); // sleep for 1 millisecond
 	}
 	fbgl_draw_line(start, end, 0x000000, &buffer);
 
