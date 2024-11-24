@@ -296,6 +296,7 @@ void fbgl_set_bg(fbgl_t *fb, uint32_t color)
 
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 {
+#ifdef FBGL_VALIDATE_PUT_PIXEL
 	if (!fb || !fb->pixels) {
 		fprintf(stderr, "Error: framebuffer not initialized.\n");
 		return;
@@ -304,7 +305,7 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 	if (x < 0 || x >= fb->width || y < 0 || y >= fb->height) {
 		return; // Ignore out-of-bound coordinates
 	}
-
+#endif // FBGL_VALIDATE_PUT_PIXEL
 	size_t index = y * fb->width + x;
 	fb->pixels[index] = color;
 }
