@@ -1,10 +1,10 @@
 #define FBGL_IMPLEMENTATION
-//#define FBGL_HIDE_CURSOR
+// #define FBGL_HIDE_CURSOR
 #define FBGL_USE_FREETYPE
 #include "../fbgl.h"
 
-#include <stdio.h>
 #include <stddef.h>
+#include <stdio.h>
 
 int main()
 {
@@ -43,7 +43,7 @@ int main()
 			fprintf(stdout, "ESC pressed\n");
 			break;
 		}
-		//fbgl_set_bg(&buffer, i++); // Set background color to
+		// fbgl_set_bg(&buffer, i++); // Set background color to
 		for (int i = 0x000000; i <= 0xFFFFFF; i++) {
 			fbgl_set_bg(&buffer, i);
 		}
