@@ -177,6 +177,15 @@ Contributions are welcome! If you’d like to improve `fbgl`, add features, or f
 
 ---
 
+---
+
+## Showcase
+
+First Texture Rendering
+![fist texture render](./docs/texture.gif)
+
+---
+
 ## Contact
 
 If you have questions or suggestions, feel free to reach out via GitHub or email.
