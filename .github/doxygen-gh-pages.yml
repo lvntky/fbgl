@@ -21,7 +21,10 @@ jobs:
           sudo apt-get install -y doxygen graphviz
 
       - name: Generate Doxygen Documentation
-        run: doxygen Doxyfile
+        run: |
+          cd docs
+          doxygen Doxyfile
+          cd ..
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/master'
@@ -31,3 +34,10 @@ jobs:
           publish_dir: ./docs/html
           enable_jekyll: false
           full_commit_message: Deploy Doxygen documentation
+          
+      - name: List generated files
+        run: |
+          echo "Contents of docs directory:"
+          ls -la docs/
+          echo "Contents of docs/html directory (if exists):"
+          ls -la docs/html/ || echo "html directory not found"
