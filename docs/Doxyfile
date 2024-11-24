@@ -5,7 +5,7 @@ PROJECT_NAME           = "FBGL"
 PROJECT_NUMBER         = "0.1.0"
 PROJECT_BRIEF         = "Framebuffer Graphics Library"
 PROJECT_LOGO          =
-OUTPUT_DIRECTORY      = docs
+OUTPUT_DIRECTORY      = .
 CREATE_SUBDIRS        = NO
 ALLOW_UNICODE_NAMES   = NO
 OUTPUT_LANGUAGE       = English
@@ -19,11 +19,11 @@ EXTRACT_LOCAL_METHODS = YES
 EXTRACT_ANON_NSPACES = NO
 
 # Input files
-INPUT                 = .
+INPUT                 = ../
 FILE_PATTERNS         = *.h
 RECURSIVE             = YES
 EXCLUDE               = 
-EXCLUDE_PATTERNS      = 
+EXCLUDE_PATTERNS      = */build/* */.*
 EXCLUDE_SYMBOLS       = 
 
 # Source browsing
@@ -35,6 +35,7 @@ REFERENCES_RELATION   = YES
 REFERENCES_LINK_SOURCE = YES
 USE_HTAGS            = NO
 VERBATIM_HEADERS     = YES
+USE_MDFILE_AS_MAINPAGE = ../README.md
 
 # HTML output
 GENERATE_HTML         = YES
