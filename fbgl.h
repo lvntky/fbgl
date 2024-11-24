@@ -27,30 +27,30 @@
 #define VERSION "0.1.0"
 #define NAME "FBGL"
 #define DEFAULT_FB "/dev/fb0"
-#define #define FBGL_MAX_KEYS 256  // Maximum number of keys to track
+#define FBGL_MAX_KEYS 256 // Maximum number of keys to track
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <unistd.h>
 #include <linux/fb.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <termios.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <termios.h>
+#include <unistd.h>
 
 #ifdef FBGL_USE_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#endif //FBGL_USE_FREETYPE
+#endif // FBGL_USE_FREETYPE
 
 /**
-* Structs
-*/
+ * Structs
+ */
 typedef struct fbgl {
 	int width;
 	int height;
@@ -93,18 +93,17 @@ typedef struct fbgl_tga_texture {
 } fbgl_tga_texture_t;
 
 typedef struct fbgl_keyboard {
-    bool keys[FBGL_MAX_KEYS];     // Current state of each key
-    bool prev_keys[FBGL_MAX_KEYS]; // Previous state of each key
-    bool is_initialized;           // Track if keyboard is initialized
+	bool keys[FBGL_MAX_KEYS]; // Current state of each key
+	bool prev_keys[FBGL_MAX_KEYS]; // Previous state of each key
+	bool is_initialized; // Track if keyboard is initialized
 } fbgl_keyboard_t;
-
 
 /**
  * Key state function and variables
- * 
+ *
  */
 static struct termios orig_termios;
-static fbgl_keyboard_t keyboard = {0};
+static fbgl_keyboard_t keyboard = { 0 };
 
 #ifdef FBGL_HIDE_CURSOR
 #include <linux/kd.h>
@@ -125,7 +124,7 @@ int fbgl_hide_cursor(int fd)
 	close(tty_fd);
 	return 0;
 }
-#endif //FBGL_HIDE_CURSOR
+#endif // FBGL_HIDE_CURSOR
 
 #ifdef FBGL_USE_FREETYPE
 FT_Library fbgl_freetype_init();
@@ -134,7 +133,7 @@ FT_Face fbgl_load_font(FT_Library library, const char *font_path,
 		       int font_size);
 void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
 			       const char *text, int x, int y);
-#endif //FBGL_USE_FREETYPE
+#endif // FBGL_USE_FREETYPE
 
 #ifdef __cplusplus
 extern "C" {
@@ -156,28 +155,28 @@ int fbgl_init(const char *device, fbgl_t *fb);
 void fbgl_destroy(fbgl_t *fb);
 
 /**
-* Drawing functions
-*/
+ * Drawing functions
+ */
 void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb);
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *fb);
 void fbgl_set_bg();
 
 /**
-* Display methods
-*/
+ * Display methods
+ */
 void fbgl_display();
 
 /**
-* Access framebuffer data methods
-*/
+ * Access framebuffer data methods
+ */
 uint32_t *fb_get_data(void);
 int fb_get_width(void);
 int fb_get_height(void);
 
 /**
-* Shapes
-*/
+ * Shapes
+ */
 void fbgl_draw_rectangle_outline(fbgl_point_t top_left,
 				 fbgl_point_t bottom_right, uint32_t color,
 				 fbgl_t *fb);
@@ -186,14 +185,14 @@ void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
 				fbgl_t *fb);
 
 /**
-* texture
-*/
+ * texture
+ */
 fbgl_tga_texture_t *fbgl_load_tga_texture(const char *path);
 void fbgl_destroy_texture(fbgl_tga_texture_t *texture);
 void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t *texture, int x, int y);
 
 /**
- * Keyboard 
+ * Keyboard
  */
 int fbgl_keyboard_init();
 void fbgl_keyboard_clean();
@@ -243,7 +242,7 @@ int fbgl_init(const char *device, fbgl_t *fb)
 	fbgl_hide_cursor(fb->fd);
 	fbgl_set_signal_handlers();
 	fbgl_enable_raw_mode();
-#endif //FBGL_HIDE_CURSOR
+#endif // FBGL_HIDE_CURSOR
 
 	fb->width = fb->vinfo.xres;
 	fb->height = fb->vinfo.yres;
