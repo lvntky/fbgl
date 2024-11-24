@@ -52,20 +52,20 @@
  * Structs
  */
 typedef struct fbgl {
-    int width;
-    int height;
-    int fd;
-    size_t screen_size;
+    int32_t width;
+    int32_t height;
+    int32_t fd;
+    uint32_t screen_size;
     uint32_t* pixels;
     struct fb_var_screeninfo vinfo; // Variable screen information
     struct fb_fix_screeninfo finfo; // Fixed screen information
 } fbgl_t;
 
 typedef struct fbgl_window {
-    int x; // Top-left x-coordinate of the window
-    int y; // Top-left y-coordinate of the window
-    int width; // Width of the window
-    int height; // Height of the window
+    int32_t x; // Top-left x-coordinate of the window
+    int32_t y; // Top-left y-coordinate of the window
+    uint32_t width; // Width of the window
+    uint32_t height; // Height of the window
     fbgl_t* fb; // Pointer to the framebuffer context
 } fbgl_window_t;
 
@@ -82,8 +82,8 @@ typedef struct fbgl_psf2_header {
 } fbgl_psf2_header_t;
 
 typedef struct fbgl_point {
-    size_t x;
-    size_t y;
+    int32_t x;
+    int32_t y;
 } fbgl_point_t;
 
 typedef struct fbgl_tga_texture {
@@ -160,7 +160,6 @@ void fbgl_destroy(fbgl_t* fb);
 void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t* fb);
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t* fb);
-void fbgl_set_bg();
 
 /**
  * Display methods
@@ -170,9 +169,9 @@ void fbgl_display();
 /**
  * Access framebuffer data methods
  */
-uint32_t* fb_get_data(void);
-int fb_get_width(void);
-int fb_get_height(void);
+uint32_t* fb_get_data(fbgl_t const* fb);
+uint32_t fb_get_width(fbgl_t const* fb);
+uint32_t fb_get_height(fbgl_t const* fb);
 
 /**
  * Shapes
@@ -189,7 +188,7 @@ void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
  */
 fbgl_tga_texture_t* fbgl_load_tga_texture(const char* path);
 void fbgl_destroy_texture(fbgl_tga_texture_t* texture);
-void fbgl_draw_texture(fbgl_t* fb, fbgl_tga_texture_t* texture, int x, int y);
+void fbgl_draw_texture(fbgl_t* fb, fbgl_tga_texture_t const* texture, int32_t x, int32_t y);
 
 /**
  * Keyboard
@@ -282,19 +281,22 @@ void fbgl_destroy(fbgl_t* fb)
 
 void fbgl_set_bg(fbgl_t* fb, uint32_t color)
 {
+#ifdef DEBUG
     if (!fb || fb->fd == -1) {
         fprintf(stderr, "Error: framebuffer not initialized.\n");
         return;
     }
+#endif // DEBUG
 
     // Fill the entire framebuffer with the specified color
-    for (size_t i = 0; i < (fb->width * fb->height); ++i) {
+    for (int i = 0; i < fb->screen_size; i++) {
         fb->pixels[i] = color;
     }
 }
 
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t* fb)
 {
+#ifdef DEBUG
     if (!fb || !fb->pixels) {
         fprintf(stderr, "Error: framebuffer not initialized.\n");
         return;
@@ -303,8 +305,9 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t* fb)
     if (x < 0 || x >= fb->width || y < 0 || y >= fb->height) {
         return; // Ignore out-of-bound coordinates
     }
+#endif // DEBUG
 
-    size_t index = y * fb->width + x;
+    const size_t index = y * fb->width + x;
     fb->pixels[index] = color;
 }
 
@@ -376,8 +379,6 @@ void fbgl_set_signal_handlers()
     }
 }
 
-#endif
-
 #ifdef FBGL_USE_FREETYPE
 FT_Library fbgl_freetype_init()
 {
@@ -408,15 +409,15 @@ FT_Face fbgl_load_font(FT_Library library, const char* font_path, int font_size)
 }
 
 void fbgl_render_freetype_text(fbgl_t* fb, FT_Library library, FT_Face face,
-    const char* text, int x, int y)
+    const char* text, int32_t x, int32_t y)
 {
     while (*text) {
         FT_Load_Char(face, *text, FT_LOAD_RENDER);
         FT_Bitmap bitmap = face->glyph->bitmap;
 
         // Draw the bitmap to framebuffer
-        for (int j = 0; j < bitmap.rows; j++) {
-            for (int i = 0; i < bitmap.width; i++) {
+        for (int32_t j = 0; j < bitmap.rows; j++) {
+            for (int32_t i = 0; i < bitmap.width; i++) {
                 if (bitmap.buffer[j * bitmap.width + i]) { // Check pixel is not empty
                     fbgl_put_pixel(x + i, y + j, 0xFF0000,
                         fb); // Draw white pixel
@@ -429,26 +430,27 @@ void fbgl_render_freetype_text(fbgl_t* fb, FT_Library library, FT_Face face,
 }
 
 #endif // FBGL_USE_FREETYPE
+
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color,
     fbgl_t* buffer)
 {
-    int dx = abs(y.x - x.x);
-    int dy = abs(y.y - x.y);
+    const int32_t dx = abs(y.x - x.x);
+    const int32_t dy = abs(y.y - x.y);
 
-    int sx = (x.x < y.x) ? 1 : -1;
-    int sy = (x.y < y.y) ? 1 : -1;
+    const int32_t sx = (x.x < y.x) ? 1 : -1;
+    const int32_t sy = (x.y < y.y) ? 1 : -1;
 
-    int err = dx - dy;
+    int32_t err = dx - dy;
 
     while (1) {
         // Set the pixel at the current position
         fbgl_put_pixel(x.x, x.y, color, buffer);
 
         // If we've reached the end point, break
-        if (x.x == y.x && x.y == y.y)
+        if (x.x >= y.x && x.y >= y.y)
             break;
 
-        int e2 = 2 * err;
+        const int32_t e2 = 2 * err;
 
         if (e2 > -dy) {
             err -= dy;
@@ -490,9 +492,9 @@ void fbgl_draw_rectangle_filled(fbgl_point_t top_left,
     fbgl_point_t bottom_right, uint32_t color,
     fbgl_t* fb)
 {
-    for (int y = top_left.y; y < bottom_right.y; y++) {
+    for (int32_t y = top_left.y; y < bottom_right.y; y++) {
         // Manually set each pixel in the row
-        for (int x = top_left.x; x < bottom_right.x; x++) {
+        for (int32_t x = top_left.x; x < bottom_right.x; x++) {
             fbgl_put_pixel(x, y, color, fb);
         }
     }
@@ -602,7 +604,7 @@ void fbgl_destroy_texture(fbgl_tga_texture_t* texture)
     }
 }
 
-void fbgl_draw_texture(fbgl_t* fb, fbgl_tga_texture_t* texture, int x, int y)
+void fbgl_draw_texture(fbgl_t* fb, fbgl_tga_texture_t const* texture, int32_t x, int32_t y)
 {
     if (!fb || !texture || !texture->data) {
         return;
@@ -626,6 +628,24 @@ void fbgl_draw_texture(fbgl_t* fb, fbgl_tga_texture_t* texture, int x, int y)
         }
     }
 }
+
+uint32_t fb_get_width(fbgl_t const* fb)
+{
+    return fb->width;
+}
+
+uint32_t fb_get_height(fbgl_t const* fb)
+{
+    return fb->height;
+}
+
+uint32_t* fb_get_data(fbgl_t const* fb)
+{
+    return fb->pixels;
+}
+
+#endif // FBGL_IMPLEMENTATION
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
