@@ -25,9 +25,11 @@
 
 ### Installation
 
-No installation is required! Simply copy the `fbgl.h` file into your project directory and include it in your source files.
+No installation is required! Simply copy the `fbgl.h` file into your project directory and include it in your source files,
+while also defining the `FBGL_IMPLEMENTATION` macro in one of your source files.
 
 ```c
+#define FBGL_IMPLEMENTATION
 #include "fbgl.h"
 ```
 
