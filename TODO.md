@@ -4,17 +4,17 @@
 - [x] Implement pixel manipulation: set, get, and clear individual pixels with color data.
 - [ ] Implement basic shapes:
   - [x] Draw lines.
-  - [ ] Draw rectangles.
+  - [x] Draw rectangles.
   - [ ] Draw circles.
   - [ ] Draw ellipses.
   - [ ] Draw polygons.
-  - [ ] Support filled versions of shapes.
-  - [ ] Support outlined versions of shapes.
+  - [x] Support filled versions of shapes.
+  - [x] Support outlined versions of shapes.
 - [ ] Implement bitmap rendering:
-  - [ ] Render 2D images (bitmaps) to the framebuffer.
+  - [x] Render 2D images (tga) to the framebuffer.
   - [ ] Support transparency via alpha channels.
   - [ ] Support transparency via a key color.
-- [ ] Implement text rendering using bitmap fonts.
+- [ ] Implement text rendering using bitmap or tga fonts.
 
 ---
 
@@ -43,9 +43,9 @@
   - [ ] Transform relative to origin or center.
 - [ ] Add optional anti-aliasing for smoother shapes and lines.
 - [ ] Implement image manipulation:
-  - [ ] Scale bitmaps.
-  - [ ] Crop bitmaps.
-  - [ ] Rotate bitmaps.
+  - [ ] Scale tga.
+  - [ ] Crop tga.
+  - [ ] Rotate tga.
 - [ ] Implement gradients and patterns:
   - [ ] Fill shapes with gradients.
   - [ ] Fill shapes with pattern-based textures.
