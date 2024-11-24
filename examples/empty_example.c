@@ -1,7 +1,7 @@
 #define FBGL_IMPLEMENTATION
 //#define FBGL_HIDE_CURSOR
 #define FBGL_USE_FREETYPE
-#include "../fbgl.h"
+#include "fbgl.h"
 
 #include <stdio.h>
 #include <stddef.h>

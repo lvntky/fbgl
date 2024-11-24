@@ -1,5 +1,5 @@
 #define FBGL_IMPLEMENTATION
-#include "../fbgl.h"
+#include "fbgl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h> // for usleep

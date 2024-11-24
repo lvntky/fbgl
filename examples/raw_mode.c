@@ -1,5 +1,5 @@
 #define FBGL_IMPLEMENTATION
-#include "../fbgl.h"
+#include "fbgl.h"
 #include <stdio.h>
 
 int main(int argc, char *argv[])
