@@ -25,9 +25,11 @@
 
 ### Installation
 
-No installation is required! Simply copy the `fbgl.h` file into your project directory and include it in your source files.
+No installation is required! Simply copy the `fbgl.h` file into your project directory and include it in your source files,
+while also defining the `FBGL_IMPLEMENTATION` macro in one of your source files.
 
 ```c
+#define FBGL_IMPLEMENTATION
 #include "fbgl.h"
 ```
 
@@ -40,31 +42,36 @@ No installation is required! Simply copy the `fbgl.h` file into your project dir
 Here’s a simple program that initializes the framebuffer, clears it to a blue color, and draws a red diagonal line.
 
 ```c
-#include <stdio.h>
 #include "fbgl.h"
+#define FBGL_IMPLEMENTATION
+#include <stdio.h>
 
-int main() {
+int main()
+{
+
+    fbgl_t buffer;
+
     // Initialize the framebuffer
-    if (fbgl_init("/dev/fb0") != 0) {
+    if (fbgl_init("/dev/fb0", &buffer) != 0) {
         fprintf(stderr, "Failed to initialize framebuffer\n");
         return 1;
     }
 
-    printf("Framebuffer size: %dx%d\n", fbgl_get_width(), fbgl_get_height());
+    printf("Framebuffer size: %dx%d\n", fb_get_width(), fb_get_height());
 
     // Clear framebuffer to blue
     fbgl_clear(0x0000FFFF); // Blue color
 
     // Draw a red diagonal line
-    for (int i = 0; i < fbgl_get_width() && i < fbgl_get_height(); i++) {
-        fbgl_put_pixel(i, i, 0xFFFF0000); // Red
+    for (int i = 0; i < fb_get_width() && i < fb_get_height(); i++) {
+        fbgl_put_pixel(i, i, 0xFFFF0000, &buffer); // Red
     }
 
     // Wait for user input before exiting
     getchar();
 
     // Clean up
-    fbgl_destroy();
+    fbgl_destroy(&buffer);
     return 0;
 }
 ```
