@@ -127,7 +127,7 @@ int fbgl_hide_cursor(int fd)
 #endif // FBGL_HIDE_CURSOR
 
 #ifdef FBGL_USE_FREETYPE
-FT_Library fbgl_freetype_init();
+FT_Library fbgl_freetype_init(void);
 void fbgl_freetype_cleanup(FT_Library library);
 FT_Face fbgl_load_font(FT_Library library, const char *font_path,
 		       int font_size);
@@ -144,11 +144,11 @@ extern "C" {
  */
 char const *fbgl_name_info(void);
 char const *fbgl_version_info(void);
-void fbgl_enable_raw_mode();
-void fbgl_disable_raw_mode();
+void fbgl_enable_raw_mode(void);
+void fbgl_disable_raw_mode(void);
 void fbgl_cleanup(int sig);
-int fbgl_check_esc_key();
-void fbgl_set_signal_handlers();
+int fbgl_check_esc_key(void);
+void fbgl_set_signal_handlers(void);
 
 /*Create and destroy methods*/
 int fbgl_init(const char *device, fbgl_t *fb);
@@ -164,7 +164,7 @@ void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *fb);
 /**
  * Display methods
  */
-void fbgl_display();
+void fbgl_display(void);
 
 /**
  * Access framebuffer data methods
@@ -194,9 +194,9 @@ void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t const *texture, int32_t x,
 /**
  * Keyboard
  */
-int fbgl_keyboard_init();
-void fbgl_keyboard_clean();
-void fbgl_keyboard_update();
+int fbgl_keyboard_init(void);
+void fbgl_keyboard_clean(void);
+void fbgl_keyboard_update(void);
 bool fbgl_key_pressed(unsigned char key);
 bool fbgl_key_released(unsigned char key);
 bool fbgl_key_down(unsigned char key);
@@ -291,7 +291,7 @@ void fbgl_set_bg(fbgl_t *fb, uint32_t color)
 #endif // DEBUG
 
 	// Fill the entire framebuffer with the specified color
-	for (int i = 0; i < fb->screen_size; i++) {
+	for (uint32_t i = 0; i < fb->width * fb->height; i++) {
 		fb->pixels[i] = color;
 	}
 }
@@ -313,7 +313,7 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 	fb->pixels[index] = color;
 }
 
-void fbgl_enable_raw_mode()
+void fbgl_enable_raw_mode(void)
 {
 	struct termios raw;
 
@@ -329,7 +329,7 @@ void fbgl_enable_raw_mode()
 	}
 }
 
-void fbgl_disable_raw_mode()
+void fbgl_disable_raw_mode(void)
 {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
 		perror("tcsetattr");
@@ -343,7 +343,7 @@ void fbgl_cleanup(int sig)
 	exit(sig);
 }
 
-int fbgl_check_esc_key()
+int fbgl_check_esc_key(void)
 {
 	char c;
 	struct timeval tv = { 0, 0 }; // Timeout of 0, to poll immediately
@@ -368,7 +368,7 @@ int fbgl_check_esc_key()
 	return 0;
 }
 
-void fbgl_set_signal_handlers()
+void fbgl_set_signal_handlers(void)
 {
 	struct sigaction sa;
 	sa.sa_handler = fbgl_cleanup;
@@ -383,7 +383,7 @@ void fbgl_set_signal_handlers()
 }
 
 #ifdef FBGL_USE_FREETYPE
-FT_Library fbgl_freetype_init()
+FT_Library fbgl_freetype_init(void)
 {
 	FT_Library library;
 	if (FT_Init_FreeType(&library)) {
@@ -419,8 +419,8 @@ void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
 		FT_Bitmap bitmap = face->glyph->bitmap;
 
 		// Draw the bitmap to framebuffer
-		for (int32_t j = 0; j < bitmap.rows; j++) {
-			for (int32_t i = 0; i < bitmap.width; i++) {
+		for (uint32_t j = 0; j < bitmap.rows; j++) {
+			for (uint32_t i = 0; i < bitmap.width; i++) {
 				if (bitmap.buffer[j * bitmap.width +
 						  i]) { // Check pixel is not empty
 					fbgl_put_pixel(x + i, y + j, 0xFF0000,
