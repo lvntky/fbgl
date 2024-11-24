@@ -161,10 +161,6 @@ void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb);
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *fb);
 
-/**
- * Display methods
- */
-void fbgl_display(void);
 
 /**
  * Access framebuffer data methods
@@ -291,14 +287,14 @@ void fbgl_set_bg(fbgl_t *fb, uint32_t color)
 #endif // DEBUG
 
 	// Fill the entire framebuffer with the specified color
-	for (uint32_t i = 0; i < fb->width * fb->height; i++) {
+	for (int32_t i = 0; i < fb->width * fb->height; i++) {
 		fb->pixels[i] = color;
 	}
 }
 
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 {
-#ifdef DEBUG
+#ifdef FBGL_VALIDATE_PUT_PIXEL
 	if (!fb || !fb->pixels) {
 		fprintf(stderr, "Error: framebuffer not initialized.\n");
 		return;
@@ -307,7 +303,7 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 	if (x < 0 || x >= fb->width || y < 0 || y >= fb->height) {
 		return; // Ignore out-of-bound coordinates
 	}
-#endif // DEBUG
+#endif // FBGL_VALIDATE_PUT_PIXEL
 
 	const size_t index = y * fb->width + x;
 	fb->pixels[index] = color;

@@ -32,7 +32,8 @@ int main(int argc, char **argv)
 	int dy = 3; // Vertical speed (adjust for desired marquee speed)
 
 	// Main rendering loop
-	while (1) {
+	int framesize = 30 * 30;
+	while (framesize) {
 		// Clear the framebuffer (set background)
 		fbgl_set_bg(&framebuffer, 0x000000);
 
@@ -56,6 +57,7 @@ int main(int argc, char **argv)
 		}
 
 		usleep(50000); // Delay to make the marquee effect visible (adjust as needed)
+		framesize--;
 	}
 
 	// Wait for the user to press the escape key before exiting
