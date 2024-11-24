@@ -161,7 +161,6 @@ void fbgl_clear(uint32_t color);
 void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb);
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color, fbgl_t *fb);
 
-
 /**
  * Access framebuffer data methods
  */
