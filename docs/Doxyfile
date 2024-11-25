@@ -1,9 +1,61 @@
+# Doxyfile for fbgl project documentation
+
+# General configuration
 PROJECT_NAME           = fbgl
+PROJECT_NUMBER         = 1.0
+PROJECT_BRIEF          = "Documentation for the fbgl library"
 OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
-INPUT                  = fbgl.h
-FILE_PATTERNS          = *.h
-RECURSIVE              = NO
-EXTRACT_ALL            = YES
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+GENERATE_XML           = NO
+GENERATE_JSON          = NO
 
+# Input sources
+INPUT                  = fbgl.h README.md
+FILE_PATTERNS          = *.h README.md
+RECURSIVE              = NO
+EXCLUDE_PATTERNS       = test/*
+
+# Markdown support
+USE_MDFILE_AS_MAINPAGE = README.md
+MARKDOWN_SUPPORT       = YES
+
+# Extract documentation
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = YES
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+# Documentation styling
+HTML_OUTPUT            = html
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_TREEVIEW      = YES
+
+# Integrating Doxygen Awesome CSS from web
+HTML_EXTRA_STYLESHEET  = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.0.1/doxygen-awesome.css
+HTML_EXTRA_FILES       = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.0.1/doxygen-awesome-darkmode-toggle.js
+
+# Warnings
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+
+# Extra configurations
+ALIASES                = "note=\par\textbf{Note:}"
+ALIASES               += "todo=\par\textbf{TODO:}"
+ALIASES               += "bug=\par\textbf{Bug:}"
+EXCLUDE_SYMBOLS        = "*Test*"
+
+HAVE_DOT               = YES
