@@ -1,8 +1,6 @@
-# Doxyfile for fbgl project documentation
-
 # General configuration
 PROJECT_NAME           = fbgl
-PROJECT_NUMBER         = 1.0
+PROJECT_NUMBER         = 0.1.0
 PROJECT_BRIEF          = "Documentation for the fbgl library"
 OUTPUT_DIRECTORY       = docs
 CREATE_SUBDIRS         = YES
@@ -42,9 +40,9 @@ HTML_OUTPUT            = html
 HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
 
-# Integrating Doxygen Awesome CSS from web
-HTML_EXTRA_STYLESHEET  = ./style.css
-HTML_EXTRA_FILES       = ./file.js
+# Integrating Doxygen Awesome CSS and JS
+HTML_EXTRA_STYLESHEET  = ./docs/style.css
+HTML_EXTRA_FILES       = ./docs/file.js
 
 # Warnings
 WARNINGS               = YES
@@ -58,4 +56,12 @@ ALIASES               += "todo=\par\textbf{TODO:}"
 ALIASES               += "bug=\par\textbf{Bug:}"
 EXCLUDE_SYMBOLS        = "*Test*"
 
+# Graph and diagram support
 HAVE_DOT               = YES
+DOT_GRAPH_MAX_NODES    = 50
+DOT_TRANSPARENT        = YES
+DOT_IMAGE_FORMAT       = svg
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+CLASS_DIAGRAMS         = YES
+DOT_MULTI_TARGETS      = YES
