@@ -43,8 +43,8 @@ HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
 
 # Integrating Doxygen Awesome CSS from web
-HTML_EXTRA_STYLESHEET  = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.0.1/doxygen-awesome.css
-HTML_EXTRA_FILES       = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.0.1/doxygen-awesome-darkmode-toggle.js
+HTML_EXTRA_STYLESHEET  = ./style.css
+HTML_EXTRA_FILES       = ./file.js
 
 # Warnings
 WARNINGS               = YES
