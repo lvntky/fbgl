@@ -15,7 +15,7 @@
 //
 // Contributors:
 //  @lvntky
-//	@dario-loi
+//  @dario-loi
 //
 // LICENSE
 //
@@ -70,18 +70,6 @@ typedef struct fbgl_window {
 	fbgl_t *fb; // Pointer to the framebuffer context
 } fbgl_window_t;
 
-typedef struct fbgl_psf2_header {
-	uint8_t magic[2]; // Magic number, should be {0x72, 0xB5}
-	uint8_t version; // Version of PSF2 (usually 0)
-	uint8_t header_size; // Size of the header (usually 32 bytes)
-	uint16_t flags; // Flags (usually 0)
-	uint16_t numglyphs; // Number of glyphs (characters)
-	uint16_t bytes_per_glyph; // Number of bytes per glyph (depends on font size)
-	uint16_t height; // Height of each character in pixels
-	uint16_t width; // Width of each character in pixels
-	uint8_t *glyphs; // Pointer to the glyph data
-} fbgl_psf2_header_t;
-
 typedef struct fbgl_point {
 	int32_t x;
 	int32_t y;
@@ -92,6 +80,18 @@ typedef struct fbgl_tga_texture {
 	uint16_t height;
 	uint32_t *data;
 } fbgl_tga_texture_t;
+
+typedef struct fbgl_psf2_font {
+	uint32_t magic; // Magic number: 0x864ab572
+	uint32_t version; // PSF version (should be 0)
+	uint32_t headersize; // Offset of the bitmaps in the file
+	uint32_t flags; // Font flags
+	uint32_t glyph_count; // Number of glyphs
+	uint32_t glyph_size; // Bytes per glyph
+	uint32_t char_width; // Glyph width in pixels
+	uint32_t char_height; // Glyph height in pixels
+	uint8_t *glyphs; // Pointer to glyph data
+} fbgl_psf2_font_t;
 
 typedef struct fbgl_keyboard {
 	bool keys[FBGL_MAX_KEYS]; // Current state of each key
@@ -127,15 +127,6 @@ int fbgl_hide_cursor(int fd)
 	return 0;
 }
 #endif // FBGL_HIDE_CURSOR
-
-#ifdef FBGL_USE_FREETYPE
-FT_Library fbgl_freetype_init(void);
-void fbgl_freetype_cleanup(FT_Library library);
-FT_Face fbgl_load_font(FT_Library library, const char *font_path,
-		       int font_size);
-void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
-			       const char *text, int x, int y);
-#endif // FBGL_USE_FREETYPE
 
 #ifdef __cplusplus
 extern "C" {
@@ -189,6 +180,13 @@ void fbgl_destroy_texture(fbgl_tga_texture_t *texture);
 void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t const *texture, int32_t x,
 		       int32_t y);
 
+/**
+* Text
+*/
+fbgl_psf2_font_t *fbgl_load_psf2_font(const char *path);
+void fbgl_destroy_psf2_font(fbgl_psf2_font_t *font);
+void fbgl_render_psf2_text(fbgl_t *fb, fbgl_psf2_font_t *font, const char *text,
+			   int x, int y, uint32_t color);
 /**
  * Keyboard
  */
@@ -379,60 +377,6 @@ void fbgl_set_signal_handlers(void)
 		exit(EXIT_FAILURE);
 	}
 }
-
-#ifdef FBGL_USE_FREETYPE
-FT_Library fbgl_freetype_init(void)
-{
-	FT_Library library;
-	if (FT_Init_FreeType(&library)) {
-		fprintf(stderr, "Could not init FreeType Library\n");
-		return NULL;
-	}
-	return library;
-}
-
-void fbgl_freetype_cleanup(FT_Library library)
-{
-	if (library) {
-		FT_Done_FreeType(library);
-	}
-}
-
-FT_Face fbgl_load_font(FT_Library library, const char *font_path, int font_size)
-{
-	FT_Face face;
-	if (FT_New_Face(library, font_path, 0, &face)) {
-		fprintf(stderr, "Could not open font: %s\n", font_path);
-		return NULL;
-	}
-	FT_Set_Pixel_Sizes(face, 0, font_size); // Set font size
-	return face;
-}
-
-void fbgl_render_freetype_text(fbgl_t *fb, FT_Library library, FT_Face face,
-			       const char *text, int32_t x, int32_t y)
-{
-	while (*text) {
-		FT_Load_Char(face, *text, FT_LOAD_RENDER);
-		FT_Bitmap bitmap = face->glyph->bitmap;
-
-		// Draw the bitmap to framebuffer
-		for (uint32_t j = 0; j < bitmap.rows; j++) {
-			for (uint32_t i = 0; i < bitmap.width; i++) {
-				if (bitmap.buffer[j * bitmap.width +
-						  i]) { // Check pixel is not empty
-					fbgl_put_pixel(x + i, y + j, 0xFF0000,
-						       fb); // Draw white pixel
-				}
-			}
-		}
-		x += face->glyph->advance.x >>
-		     6; // Move to the next character position
-		++text;
-	}
-}
-
-#endif // FBGL_USE_FREETYPE
 
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color,
 		    fbgl_t *buffer)
@@ -679,6 +623,97 @@ float fbgl_get_fps(void)
 		return 1.0 / time_diff;
 	} else {
 		return 0.0f; // Avoid division by zero
+	}
+}
+fbgl_psf2_font_t *fbgl_load_psf2_font(const char *path)
+{
+	FILE *file = fopen(path, "rb");
+	if (!file) {
+		perror("Failed to open font file");
+		return NULL;
+	}
+
+	// Read the PSF2 header
+	fbgl_psf2_font_t *font = malloc(sizeof(fbgl_psf2_font_t));
+	if (!font) {
+		perror("Failed to allocate memory for font");
+		fclose(file);
+		return NULL;
+	}
+
+	if (fread(font, sizeof(uint32_t), 8, file) != 8) {
+		perror("Failed to read font header");
+		free(font);
+		fclose(file);
+		return NULL;
+	}
+	/*
+	// Verify the magic number
+	if (font->magic != 0x864ab572) {
+		fprintf(stderr, "Invalid PSF2 magic number\n");
+		free(font);
+		fclose(file);
+		return NULL;
+	}
+	*/
+	// Load glyphs
+	font->glyphs = malloc(font->glyph_count * font->glyph_size);
+	if (!font->glyphs) {
+		perror("Failed to allocate memory for glyphs");
+		free(font);
+		fclose(file);
+		return NULL;
+	}
+
+	if (fread(font->glyphs, font->glyph_size, font->glyph_count, file) !=
+	    font->glyph_count) {
+		perror("Failed to read glyph data");
+		free(font->glyphs);
+		free(font);
+		fclose(file);
+		return NULL;
+	}
+
+	fclose(file);
+	return font;
+}
+void fbgl_destroy_psf2_font(fbgl_psf2_font_t *font)
+{
+	if (font) {
+		free(font->glyphs);
+		free(font);
+	}
+}
+void fbgl_render_psf2_text(fbgl_t *fb, fbgl_psf2_font_t *font, const char *text,
+			   int x, int y, uint32_t color)
+{
+	if (!fb || !font || !text)
+		return;
+
+	int cursor_x = x, cursor_y = y;
+
+	for (const char *c = text; *c; c++) {
+		uint32_t glyph_index = (uint8_t)*c;
+
+		if (glyph_index >= font->glyph_count) {
+			glyph_index =
+				0; // Use a fallback glyph (e.g., space or undefined)
+		}
+
+		uint8_t *glyph = font->glyphs + glyph_index * font->glyph_size;
+
+		for (uint32_t row = 0; row < font->char_height; row++) {
+			for (uint32_t col = 0; col < font->char_width; col++) {
+				if (glyph[row] &
+				    (1 << (font->char_width - 1 - col))) {
+					fbgl_put_pixel(cursor_x + col,
+						       cursor_y + row, color,
+						       fb);
+				}
+			}
+		}
+
+		cursor_x += font->char_width; // Move to the next character
 	}
 }
 
