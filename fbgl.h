@@ -42,6 +42,7 @@
 #include <sys/mman.h>
 #include <termios.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifdef FBGL_USE_FREETYPE
 #include <ft2build.h>
@@ -104,6 +105,7 @@ typedef struct fbgl_keyboard {
  */
 static struct termios orig_termios;
 static fbgl_keyboard_t keyboard = { 0 };
+static struct timespec previous_frame_time = { 0 };
 
 #ifdef FBGL_HIDE_CURSOR
 #include <linux/kd.h>
@@ -149,6 +151,7 @@ void fbgl_disable_raw_mode(void);
 void fbgl_cleanup(int sig);
 int fbgl_check_esc_key(void);
 void fbgl_set_signal_handlers(void);
+float fbgl_get_fps(void);
 
 /*Create and destroy methods*/
 int fbgl_init(const char *device, fbgl_t *fb);
@@ -653,6 +656,30 @@ uint32_t fb_get_height(fbgl_t const *fb)
 uint32_t *fb_get_data(fbgl_t const *fb)
 {
 	return fb->pixels;
+}
+
+float fbgl_get_fps(void)
+{
+	struct timespec current_time;
+	clock_gettime(CLOCK_MONOTONIC, &current_time);
+
+	if (previous_frame_time.tv_sec == 0 &&
+	    previous_frame_time.tv_nsec == 0) {
+		previous_frame_time = current_time;
+		return 0.0f;
+	}
+
+	double time_diff =
+		(current_time.tv_sec - previous_frame_time.tv_sec) +
+		(current_time.tv_nsec - previous_frame_time.tv_nsec) / 1e9;
+
+	previous_frame_time = current_time;
+
+	if (time_diff > 0.0) {
+		return 1.0 / time_diff;
+	} else {
+		return 0.0f; // Avoid division by zero
+	}
 }
 
 #endif // FBGL_IMPLEMENTATION
