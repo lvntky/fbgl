@@ -27,7 +27,6 @@
 #define VERSION "0.1.0"
 #define NAME "FBGL"
 #define DEFAULT_FB "/dev/fb0"
-#define FBGL_MAX_KEYS 256 // Maximum number of keys to track
 
 #include <fcntl.h>
 #include <linux/fb.h>
@@ -40,6 +39,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -92,39 +92,111 @@ typedef struct fbgl_tga_texture {
 	uint32_t *data;
 } fbgl_tga_texture_t;
 
-typedef struct fbgl_keyboard {
-	bool keys[FBGL_MAX_KEYS]; // Current state of each key
-	bool prev_keys[FBGL_MAX_KEYS]; // Previous state of each key
-	bool is_initialized; // Track if keyboard is initialized
-} fbgl_keyboard_t;
+typedef enum fbgl_key_event_type {
+	FBGL_KEY_EVENT_PRESS,
+	FBGL_KEY_EVENT_RELEASE
+} fbgl_key_event_type_t;
+
+// Special key codes
+typedef enum fbgl_special_key {
+	FBGL_KEY_UP = 0x100,
+	FBGL_KEY_DOWN,
+	FBGL_KEY_LEFT,
+	FBGL_KEY_RIGHT,
+	FBGL_KEY_ESC = 27,
+	FBGL_KEY_ENTER = 13,
+	FBGL_KEY_BACKSPACE = 8,
+	FBGL_KEY_TAB = 9,
+	FBGL_KEY_SPACE = 32
+} fbgl_special_key_t;
+
+typedef struct fbgl_key_event {
+	fbgl_key_event_type_t type;
+	unsigned char key;
+	bool ctrl_pressed;
+	bool alt_pressed;
+	bool shift_pressed;
+	double timestamp; // Time when event occurred
+} fbgl_key_event_t;
+
+// Callback function type
+typedef void (*fbgl_key_callback_t)(fbgl_key_event_t event, void *user_data);
+typedef struct fbgl_callback_node {
+	fbgl_key_callback_t callback;
+	void *user_data;
+	struct fbgl_callback_node *next;
+} fbgl_callback_node_t;
+
+// Configuration structure
+typedef struct fbgl_keyboard_config {
+	bool enable_raw_mode; // Enable terminal raw mode
+	bool handle_special_keys; // Handle special key combinations
+	bool generate_release_events; // Generate key release events
+	int buffer_size; // Size of input buffer
+	double key_repeat_delay; // Delay before key repeat starts (in seconds)
+	double key_repeat_rate; // Rate of key repeat (events per second)
+} fbgl_keyboard_config_t;
+
+typedef struct fbgl_keyboard_handler {
+	fbgl_callback_node_t *callbacks;
+	fbgl_keyboard_config_t config;
+	bool is_initialized;
+	bool ctrl_pressed;
+	bool alt_pressed;
+	bool shift_pressed;
+	double last_event_time;
+	unsigned char last_key;
+} fbgl_keyboard_handler_t;
 
 /**
  * Key state function and variables
  *
  */
 static struct termios orig_termios;
-static fbgl_keyboard_t keyboard = { 0 };
 
-#ifdef FBGL_HIDE_CURSOR
-#include <linux/kd.h>
-int fbgl_hide_cursor(int fd)
+static fbgl_keyboard_handler_t keyboard_handler = { 0 };
+
+static const fbgl_keyboard_config_t _DEFAULT_KEYBOARD_CONFIG = {
+	.enable_raw_mode = true,
+	.handle_special_keys = true,
+	.generate_release_events = true,
+	.buffer_size = 32,
+	.key_repeat_delay = 0.5,
+	.key_repeat_rate = 30.0
+};
+
+static double _get_current_time(void)
 {
-	int tty_fd = open("/dev/tty0", O_RDWR);
-	if (tty_fd == -1) {
-		perror("Error opening /dev/tty0");
-		return -1;
-	}
-
-	if (ioctl(tty_fd, KDSETMODE, KD_GRAPHICS) == -1) {
-		perror("Error setting graphics mode");
-		close(tty_fd);
-		return -1;
-	}
-
-	close(tty_fd);
-	return 0;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec + tv.tv_usec / 1000000.0;
 }
-#endif // FBGL_HIDE_CURSOR
+
+static void _enable_raw_mode(void)
+{
+	struct termios raw;
+
+	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+		perror("tcgetattr");
+		return;
+	}
+
+	raw = orig_termios;
+	raw.c_lflag &= ~(ECHO | ICANON);
+	raw.c_cc[VMIN] = 0;
+	raw.c_cc[VTIME] = 0;
+
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+		perror("tcsetattr");
+	}
+}
+
+static void _disable_raw_mode(void)
+{
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+		perror("tcsetattr");
+	}
+}
 
 #ifdef FBGL_USE_FREETYPE
 FT_Library fbgl_freetype_init(void);
@@ -187,14 +259,22 @@ void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t const *texture, int32_t x,
 		       int32_t y);
 
 /**
- * Keyboard
- */
-int fbgl_keyboard_init(void);
-void fbgl_keyboard_clean(void);
-void fbgl_keyboard_update(void);
-bool fbgl_key_pressed(unsigned char key);
-bool fbgl_key_released(unsigned char key);
-bool fbgl_key_down(unsigned char key);
+* Keyboard
+*/
+int fbgl_keyboard_init_with_config(fbgl_keyboard_config_t config);
+int fbgl_keyboard_init(void); // Uses default configuration
+void fbgl_keyboard_cleanup(void);
+int fbgl_register_keyboard_callback(fbgl_key_callback_t callback,
+				    void *user_data);
+int fbgl_unregister_keyboard_callback(fbgl_key_callback_t callback,
+				      void *user_data);
+void fbgl_process_keyboard_events(void);
+bool fbgl_is_key_pressed(unsigned char key);
+double fbgl_get_key_hold_duration(unsigned char key);
+void fbgl_set_key_repeat(double delay, double rate);
+void fbgl_clear_all_callbacks(void);
+void fbgl_suspend_keyboard(void);
+void fbgl_resume_keyboard(void);
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -233,12 +313,6 @@ int fbgl_init(const char *device, fbgl_t *fb)
 		return -1;
 	}
 
-#ifdef FBGL_HIDE_CURSOR
-	fbgl_hide_cursor(fb->fd);
-	fbgl_set_signal_handlers();
-	fbgl_enable_raw_mode();
-#endif // FBGL_HIDE_CURSOR
-
 	fb->width = fb->vinfo.xres;
 	fb->height = fb->vinfo.yres;
 	fb->screen_size = fb->finfo.smem_len;
@@ -270,12 +344,7 @@ void fbgl_destroy(fbgl_t *fb)
 
 	close(fb->fd);
 	fb->fd = -1;
-
-#ifdef FBGL_HIDE_CURSOR
-	fbgl_disable_raw_mode();
-#endif // FBGL_HIDE_CURSOR
 }
-
 void fbgl_set_bg(fbgl_t *fb, uint32_t color)
 {
 #ifdef DEBUG
@@ -306,75 +375,6 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 
 	const size_t index = y * fb->width + x;
 	fb->pixels[index] = color;
-}
-
-void fbgl_enable_raw_mode(void)
-{
-	struct termios raw;
-
-	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-		perror("tcgetattr");
-		exit(EXIT_FAILURE);
-	}
-	raw = orig_termios;
-	raw.c_lflag &= ~(ECHO | ICANON);
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-		perror("tcsetattr");
-		exit(EXIT_FAILURE);
-	}
-}
-
-void fbgl_disable_raw_mode(void)
-{
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
-		perror("tcsetattr");
-	}
-}
-
-void fbgl_cleanup(int sig)
-{
-	fbgl_disable_raw_mode();
-	printf("\033[2J\033[H"); // Clear the terminal screen and move the cursor to top-left
-	exit(sig);
-}
-
-int fbgl_check_esc_key(void)
-{
-	char c;
-	struct timeval tv = { 0, 0 }; // Timeout of 0, to poll immediately
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(STDIN_FILENO, &fds);
-
-	// Check if there's input available
-	if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) == -1) {
-		perror("select");
-		return 0;
-	}
-
-	if (FD_ISSET(STDIN_FILENO, &fds)) {
-		if (read(STDIN_FILENO, &c, 1) == -1) {
-			perror("read");
-			return 0;
-		}
-		return c == 27; // ASCII value of the `Esc` key
-	}
-
-	return 0;
-}
-
-void fbgl_set_signal_handlers(void)
-{
-	struct sigaction sa;
-	sa.sa_handler = fbgl_cleanup;
-	sa.sa_flags = 0;
-	sigemptyset(&sa.sa_mask);
-
-	if (sigaction(SIGINT, &sa, NULL) == -1 ||
-	    sigaction(SIGTERM, &sa, NULL) == -1) {
-		perror("sigaction");
-		exit(EXIT_FAILURE);
-	}
 }
 
 #ifdef FBGL_USE_FREETYPE
@@ -653,6 +653,39 @@ uint32_t fb_get_height(fbgl_t const *fb)
 uint32_t *fb_get_data(fbgl_t const *fb)
 {
 	return fb->pixels;
+}
+
+int fbgl_keyboard_init_with_config(fbgl_keyboard_config_t config)
+{
+	if (keyboard_handler.is_initialized) {
+		return 0;
+	}
+	keyboard_handler.config = config;
+	keyboard_handler.callbacks = NULL;
+	keyboard_handler.is_initialized = true;
+	keyboard_handler.last_event_time = _get_current_time();
+
+	if (config.enable_raw_mode) {
+		_enable_raw_mode();
+	}
+	// Set stdin to non - blocking
+	int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+	if (flags == -1) {
+		perror("fcntl F_GETFL");
+		return -1;
+	}
+
+	if (fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK) == -1) {
+		perror("fcntl F_SETFL");
+		return -1;
+	}
+
+	return 0;
+}
+
+int fbgl_keyboard_init(void)
+{
+	return fbgl_keyboard_init_with_config(_DEFAULT_KEYBOARD_CONFIG);
 }
 
 #endif // FBGL_IMPLEMENTATION
