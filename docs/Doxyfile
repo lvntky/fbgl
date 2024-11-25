@@ -6,3 +6,4 @@ INPUT                  = fbgl.h
 FILE_PATTERNS          = *.h
 RECURSIVE              = NO
 EXTRACT_ALL            = YES
+
