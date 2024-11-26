@@ -14,7 +14,7 @@
   - [x] Render 2D images (tga) to the framebuffer.
   - [ ] Support transparency via alpha channels.
   - [ ] Support transparency via a key color.
-- [ ] Implement text rendering using bitmap or tga fonts.
+- [x] Implement text rendering using psf fonts.
 
 ---
 
