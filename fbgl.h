@@ -81,17 +81,14 @@ typedef struct fbgl_tga_texture {
 	uint32_t *data;
 } fbgl_tga_texture_t;
 
-typedef struct fbgl_psf2_font {
-	uint32_t magic; // Magic number: 0x864ab572
-	uint32_t version; // PSF version (should be 0)
-	uint32_t headersize; // Offset of the bitmaps in the file
-	uint32_t flags; // Font flags
-	uint32_t glyph_count; // Number of glyphs
-	uint32_t glyph_size; // Bytes per glyph
-	uint32_t char_width; // Glyph width in pixels
-	uint32_t char_height; // Glyph height in pixels
-	uint8_t *glyphs; // Pointer to glyph data
-} fbgl_psf2_font_t;
+typedef struct fbgl_psf1_font {
+    uint8_t magic[2];       // Magic number (0x36, 0x04 for PSF1)
+    uint8_t mode;           // Mode (0 = 256 glyphs, 1 = 512 glyphs)
+    uint8_t char_height;    // Character height in pixels
+    uint8_t *glyphs;        // Pointer to glyph data
+    uint16_t glyph_count;   // Number of glyphs (calculated from mode)
+    uint16_t char_width;    // Character width in pixels (always 8 for PSF1)
+} fbgl_psf1_font_t;
 
 typedef struct fbgl_keyboard {
 	bool keys[FBGL_MAX_KEYS]; // Current state of each key
@@ -183,9 +180,9 @@ void fbgl_draw_texture(fbgl_t *fb, fbgl_tga_texture_t const *texture, int32_t x,
 /**
 * Text
 */
-fbgl_psf2_font_t *fbgl_load_psf2_font(const char *path);
-void fbgl_destroy_psf2_font(fbgl_psf2_font_t *font);
-void fbgl_render_psf2_text(fbgl_t *fb, fbgl_psf2_font_t *font, const char *text,
+fbgl_psf1_font_t *fbgl_load_psf1_font(const char *path);
+void fbgl_destroy_psf1_font(fbgl_psf1_font_t *font);
+void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 			   int x, int y, uint32_t color);
 /**
  * Keyboard
@@ -625,97 +622,107 @@ float fbgl_get_fps(void)
 		return 0.0f; // Avoid division by zero
 	}
 }
-fbgl_psf2_font_t *fbgl_load_psf2_font(const char *path)
-{
-	FILE *file = fopen(path, "rb");
-	if (!file) {
-		perror("Failed to open font file");
-		return NULL;
-	}
 
-	// Read the PSF2 header
-	fbgl_psf2_font_t *font = malloc(sizeof(fbgl_psf2_font_t));
-	if (!font) {
-		perror("Failed to allocate memory for font");
-		fclose(file);
-		return NULL;
-	}
+fbgl_psf1_font_t *fbgl_load_psf1_font(const char *path) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        perror("Failed to open font file");
+        return NULL;
+    }
 
-	if (fread(font, sizeof(uint32_t), 8, file) != 8) {
-		perror("Failed to read font header");
-		free(font);
-		fclose(file);
-		return NULL;
-	}
-	/*
-	// Verify the magic number
-	if (font->magic != 0x864ab572) {
-		fprintf(stderr, "Invalid PSF2 magic number\n");
-		free(font);
-		fclose(file);
-		return NULL;
-	}
-	*/
-	// Load glyphs
-	font->glyphs = malloc(font->glyph_count * font->glyph_size);
-	if (!font->glyphs) {
-		perror("Failed to allocate memory for glyphs");
-		free(font);
-		fclose(file);
-		return NULL;
-	}
+    // Allocate memory for the font structure
+    fbgl_psf1_font_t *font = malloc(sizeof(fbgl_psf1_font_t));
+    if (!font) {
+        perror("Failed to allocate memory for font");
+        fclose(file);
+        return NULL;
+    }
 
-	if (fread(font->glyphs, font->glyph_size, font->glyph_count, file) !=
-	    font->glyph_count) {
-		perror("Failed to read glyph data");
-		free(font->glyphs);
-		free(font);
-		fclose(file);
-		return NULL;
-	}
+    // Read the header (4 bytes)
+    uint8_t header[4];
+    if (fread(header, 1, sizeof(header), file) != sizeof(header)) {
+        perror("Failed to read font header");
+        free(font);
+        fclose(file);
+        return NULL;
+    }
 
-	fclose(file);
-	return font;
+    // Verify magic number
+    if (header[0] != 0x36 || header[1] != 0x04) {
+        fprintf(stderr, "Invalid PSF1 magic number\n");
+        free(font);
+        fclose(file);
+        return NULL;
+    }
+
+    // Populate the font structure
+    font->magic[0] = header[0];
+    font->magic[1] = header[1];
+    font->mode = header[2];
+    font->char_height = header[3];
+    font->glyph_count = (font->mode & 0x01) ? 512 : 256; // Determine glyph count
+    font->char_width = 8; // PSF1 glyphs are always 8 pixels wide
+
+    // Allocate memory for glyphs
+    size_t glyph_data_size = font->glyph_count * font->char_height;
+    font->glyphs = malloc(glyph_data_size);
+    if (!font->glyphs) {
+        perror("Failed to allocate memory for glyphs");
+        free(font);
+        fclose(file);
+        return NULL;
+    }
+
+    // Read glyph data
+    if (fread(font->glyphs, 1, glyph_data_size, file) != glyph_data_size) {
+        perror("Failed to read glyph data");
+        free(font->glyphs);
+        free(font);
+        fclose(file);
+        return NULL;
+    }
+
+    fclose(file);
+    return font;
 }
-void fbgl_destroy_psf2_font(fbgl_psf2_font_t *font)
-{
-	if (font) {
-		free(font->glyphs);
-		free(font);
-	}
+
+void fbgl_destroy_psf1_font(fbgl_psf1_font_t *font) {
+    if (font) {
+        free(font->glyphs);
+        free(font);
+    }
 }
-void fbgl_render_psf2_text(fbgl_t *fb, fbgl_psf2_font_t *font, const char *text,
-			   int x, int y, uint32_t color)
-{
-	if (!fb || !font || !text)
-		return;
 
-	int cursor_x = x, cursor_y = y;
+void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text, int x, int y, uint32_t color) {
+    if (!fb || !font || !text) return;
 
-	for (const char *c = text; *c; c++) {
-		uint32_t glyph_index = (uint8_t)*c;
+    int cursor_x = x;
+    int cursor_y = y;
 
-		if (glyph_index >= font->glyph_count) {
-			glyph_index =
-				0; // Use a fallback glyph (e.g., space or undefined)
-		}
+    for (const char *c = text; *c; c++) {
+        uint8_t glyph_index = (uint8_t)*c;
 
-		uint8_t *glyph = font->glyphs + glyph_index * font->glyph_size;
+        // Ensure glyph index is within range
+        if (glyph_index >= font->glyph_count) glyph_index = 0; // Default to space or undefined glyph
 
-		for (uint32_t row = 0; row < font->char_height; row++) {
-			for (uint32_t col = 0; col < font->char_width; col++) {
-				if (glyph[row] &
-				    (1 << (font->char_width - 1 - col))) {
-					fbgl_put_pixel(cursor_x + col,
-						       cursor_y + row, color,
-						       fb);
-				}
-			}
-		}
+        // Locate the glyph in the glyph table
+        uint8_t *glyph = font->glyphs + glyph_index * font->char_height;
 
-		cursor_x += font->char_width; // Move to the next character
-	}
+        // Render the glyph
+        for (int row = 0; row < font->char_height; row++) {
+            for (int col = 0; col < font->char_width; col++) {
+                // Check if the bit is set in the glyph
+                if (glyph[row] & (0x80 >> col)) {
+                    fbgl_put_pixel(cursor_x + col, cursor_y + row, color, fb);
+                }
+            }
+        }
+
+        // Move to the next character position
+        cursor_x += font->char_width;
+    }
 }
+
 
 #endif // FBGL_IMPLEMENTATION
 
