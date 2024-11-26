@@ -10,25 +10,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Install Doxygen and Graphviz
       - name: Set up Doxygen
         run: sudo apt-get install -y doxygen graphviz
 
+      # Clone the m.css repository
       - name: Clone m.css
         run: |
           git clone --depth 1 https://github.com/mosra/m.css.git mcss
           ls -R mcss
 
+      # Configure m.css by copying necessary files
       - name: Configure m.css
         run: |
-          cp mcss/doxygen/m-dark.css ./docs/m-dark.css
-          cp mcss/doxygen/m.js ./docs/m.js
+          cp mcss/doxygen/m-dark+documentation.compiled.css ./docs/m-dark.css
+          cp mcss/doxygen/m-dark.compiled.js ./docs/m.js
 
+      # Generate Doxygen documentation
       - name: Generate Doxygen documentation
         run: doxygen docs/Doxyfile
 
+      # Deploy the generated documentation to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

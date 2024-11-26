@@ -40,7 +40,7 @@ HTML_OUTPUT            = html
 HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
 
-# Integrating Doxygen Awesome CSS and JS
+# Integrating Doxygen with m.css
 HTML_EXTRA_STYLESHEET  = ./m-dark.css
 HTML_EXTRA_FILES       = ./m.js
 
