@@ -22,8 +22,8 @@ jobs:
       - name: Setup Doxygen Awesome Theme
         run: |
           mkdir -p docs
-          curl -o docs/doxygen-awesome.css https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome.css
-          curl -o docs/doxygen-awesome-darkmode-toggle.js https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome-darkmode-toggle.js
+          curl -o docs/doxygen-style.css https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome.css
+          curl -o docs/doxygen-dark.js https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome-darkmode-toggle.js
 
       # Step 4: Run Doxygen using the existing Doxyfile
       - name: Run Doxygen
