@@ -45,7 +45,7 @@ jobs:
           echo "EXTENSION_MAPPING = md=markdown" >> Doxyfile
           echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
           echo "HTML_EXTRA_STYLESHEET = docs/m.css/css/m-dark.css" >> Doxyfile
-          echo "HTML_EXTRA_FILES = docs/m.css/documentation" >> Doxyfile
+          echo "HTML_EXTRA_FILES = docs/m.css/js/m.js docs/m.css/js/m-search.js docs/m.css/css/m-components.css docs/m.css/css/m-layout.css docs/m.css/css/m-style.css docs/m.css/css/m-theme.css" >> Doxyfile
 
       # Step 5: Run Doxygen to generate raw HTML files
       - name: Run Doxygen
