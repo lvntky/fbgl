@@ -17,12 +17,14 @@ jobs:
         run: sudo apt-get install -y doxygen graphviz
 
       - name: Clone m.css
-        run: git clone --depth 1 https://github.com/mosra/m.css.git docs/mcss
+        run: |
+          git clone --depth 1 https://github.com/mosra/m.css.git mcss
+          ls -R mcss
 
       - name: Configure m.css
         run: |
-          cp docs/mcss/doxygen/*.css .
-          cp docs/mcss/doxygen/m.js .
+          cp mcss/doxygen/m-dark.css ./docs/m-dark.css
+          cp mcss/doxygen/m.js ./docs/m.js
 
       - name: Generate Doxygen documentation
         run: doxygen docs/Doxyfile
