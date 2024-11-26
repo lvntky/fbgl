@@ -21,25 +21,30 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
+          sudo apt-get install -y doxygen graphviz python3-pip
 
-      # Clone m.css
-      - name: Clone m.css
+      # Clone m.css and set up Python
+      - name: Set up m.css
         run: |
           git clone --depth 1 https://github.com/mosra/m.css.git
+          pip install pillow matplotlib
+      
+      # List contents to debug
+      - name: Debug m.css directory
+        run: |
+          echo "Listing m.css contents:"
+          find mcss -type f | grep -E "\.css$"
 
       # Prepare documentation configuration
       - name: Prepare Doxygen configuration
         run: |
           mkdir -p docs
-          cp mcss/css/m-dark.compiled.css docs/
-          cp mcss/css/m-documentation.compiled.css docs/
-          cp mcss/documentation/search.js docs/
+          # Use Python to generate the CSS
+          python3 mcss/documentation/css.py dark documentation
 
       # Generate Doxygen configuration file
       - name: Generate Doxyfile
         run: |
-          mkdir -p docs
           cat > docs/Doxyfile << EOL
           # General configuration
           PROJECT_NAME           = fbgl
@@ -79,9 +84,9 @@ jobs:
 
           # Documentation styling for m.css
           HTML_OUTPUT            = html
-          HTML_EXTRA_STYLESHEET  = \
-              "m-dark.compiled.css" \
-              "m-documentation.compiled.css"
+          HTML_EXTRA_STYLESHEET  = "\
+              m.css/output/m-dark.compiled.css \
+              m.css/output/m-documentation.compiled.css"
           HTML_DYNAMIC_SECTIONS  = YES
           GENERATE_TREEVIEW      = YES
 
@@ -116,7 +121,13 @@ jobs:
 
       # Generate Doxygen documentation
       - name: Generate Doxygen documentation
-        run: doxygen docs/Doxyfile
+        run: |
+          # Ensure output directory exists
+          mkdir -p m.css/output
+          # Generate CSS using m.css Python script
+          python3 mcss/documentation/css.py dark documentation
+          # Run Doxygen
+          doxygen docs/Doxyfile
 
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
