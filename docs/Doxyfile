@@ -41,8 +41,8 @@ HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
 
 # Integrating Doxygen with m.css
-HTML_EXTRA_STYLESHEET  = ./m-dark.css
-HTML_EXTRA_FILES       = ./m.js
+HTML_EXTRA_STYLESHEET  = ./docs/m-dark.css
+HTML_EXTRA_FILES       = ./docs/m.js
 
 # Warnings
 WARNINGS               = YES
