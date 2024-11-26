@@ -190,9 +190,9 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 int fbgl_keyboard_init(void);
 void fbgl_keyboard_clean(void);
 void fbgl_keyboard_update(void);
+bool fbgl_key_down(unsigned char key);
 bool fbgl_key_pressed(unsigned char key);
 bool fbgl_key_released(unsigned char key);
-bool fbgl_key_down(unsigned char key);
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -730,6 +730,95 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 		// Move to the next character position
 		cursor_x += font->char_width;
 	}
+}
+
+int fbgl_keyboard_init(void)
+{
+    if (keyboard.is_initialized) {
+        return 0; // Already initialized
+    }
+
+    struct termios raw;
+
+    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+        perror("tcgetattr");
+        return -1;
+    }
+
+    raw = orig_termios;
+    raw.c_lflag &= ~(ECHO | ICANON); // Disable echo and canonical mode
+    raw.c_cc[VMIN] = 0;             // Non-blocking read
+    raw.c_cc[VTIME] = 0;            // No timeout
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+        perror("tcsetattr");
+        return -1;
+    }
+
+    memset(&keyboard, 0, sizeof(fbgl_keyboard_t));
+    keyboard.is_initialized = true;
+    return 0;
+}
+
+void fbgl_keyboard_clean(void)
+{
+    if (!keyboard.is_initialized) {
+        return;
+    }
+
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+        perror("tcsetattr");
+    }
+
+    keyboard.is_initialized = false;
+}
+
+void fbgl_keyboard_update(void)
+{
+    if (!keyboard.is_initialized) {
+        return;
+    }
+
+    // Copy current state to previous state
+    memcpy(keyboard.prev_keys, keyboard.keys, sizeof(keyboard.keys));
+
+    char c;
+    while (read(STDIN_FILENO, &c, 1) > 0) {
+        if (c >= 0 && c < FBGL_MAX_KEYS) {
+            keyboard.keys[(unsigned char)c] = true;
+        }
+    }
+
+    // Reset keys that are not pressed
+    for (int i = 0; i < FBGL_MAX_KEYS; i++) {
+        if (!keyboard.keys[i]) {
+            keyboard.keys[i] = false;
+        }
+    }
+}
+
+
+bool fbgl_key_down(unsigned char key)
+{
+    if (key >= FBGL_MAX_KEYS) {
+        return false;
+    }
+    return keyboard.keys[key];
+}
+
+bool fbgl_key_pressed(unsigned char key)
+{
+    if (key >= FBGL_MAX_KEYS) {
+        return false;
+    }
+    return keyboard.keys[key] && !keyboard.prev_keys[key];
+}
+
+bool fbgl_key_released(unsigned char key)
+{
+    if (key >= FBGL_MAX_KEYS) {
+        return false;
+    }
+    return !keyboard.keys[key] && keyboard.prev_keys[key];
 }
 
 #endif // FBGL_IMPLEMENTATION
