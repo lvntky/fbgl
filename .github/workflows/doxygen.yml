@@ -44,6 +44,8 @@ jobs:
           echo "QUIET = YES" >> Doxyfile
           echo "EXTENSION_MAPPING = md=markdown" >> Doxyfile
           echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
+          echo "HTML_EXTRA_STYLESHEET = docs/m.css/css/m-dark.css" >> Doxyfile
+          echo "HTML_EXTRA_FILES = docs/m.css/documentation" >> Doxyfile
 
       # Step 5: Run Doxygen to generate raw HTML files
       - name: Run Doxygen
@@ -52,11 +54,7 @@ jobs:
       # Step 6: Process HTML with m.css
       - name: Apply m.css
         run: |
-          python3 docs/m.css/documentation/doxygen.py \
-            --input docs/html \
-            --output docs/html \
-            --site-root . \
-            --deploy
+          python3 docs/m.css/documentation/doxygen.py Doxyfile
 
       # Step 7: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
