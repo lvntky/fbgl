@@ -26,7 +26,24 @@ jobs:
           git clone --depth 1 https://github.com/mosra/m.css.git docs/m.css
 
       # Step 4: Create Doxyfile
-        # Ensure your Doxyfile includes the correct HTML_EXTRA_FILES configuration as mentioned above
+      - name: Create Doxyfile
+        run: |
+          echo "PROJECT_NAME = fbgl" > Doxyfile
+          echo "PROJECT_NUMBER = 0.1.0" >> Doxyfile
+          echo "OUTPUT_DIRECTORY = docs" >> Doxyfile
+          echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
+          echo "INPUT = fbgl.h README.md" >> Doxyfile
+          echo "FILE_PATTERNS = *.h *.md" >> Doxyfile
+          echo "RECURSIVE = NO" >> Doxyfile
+          echo "GENERATE_HTML = YES" >> Doxyfile
+          echo "HTML_OUTPUT = html" >> Doxyfile
+          echo "GENERATE_LATEX = NO" >> Doxyfile
+          echo "GENERATE_MAN = NO" >> Doxyfile
+          echo "GENERATE_RTF = NO" >> Doxyfile
+          echo "QUIET = YES" >> Doxyfile
+          echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
+          echo "EXTENSION_MAPPING = md=markdown" >> Doxyfile
+          echo "HTML_EXTRA_FILES = docs/m.css/css/m-dark.css docs/m.css/css/m-components.css docs/m.css/css/m-layout.css docs/m.css/css/m-style.css docs/m.css/css/m-theme.css docs/m.css/js/m.js docs/m.css/js/m-search.js" >> Doxyfile
 
       # Step 5: Run Doxygen
       - name: Run Doxygen
