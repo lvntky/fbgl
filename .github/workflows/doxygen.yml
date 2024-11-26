@@ -1,139 +1,99 @@
-name: Generate and Deploy Doxygen Documentation
+name: Generate and Deploy Documentation
+
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
   pull_request:
-    branches:
-      - master
+    branches: [ master ]
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-and-deploy:
+  generate-docs:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y doxygen graphviz python3-pip
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
-      # Clone m.css and set up Python
-      - name: Set up m.css
-        run: |
-          git clone --depth 1 https://github.com/mosra/m.css.git
-          pip install pillow matplotlib
-      
-      # List contents to debug
-      - name: Debug m.css directory
-        run: |
-          echo "Listing m.css contents:"
-          find mcss -type f | grep -E "\.css$"
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y doxygen graphviz
 
-      # Prepare documentation configuration
-      - name: Prepare Doxygen configuration
-        run: |
-          mkdir -p docs
-          # Use Python to generate the CSS
-          python3 mcss/documentation/css.py dark documentation
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install jinja2 Pygments
 
-      # Generate Doxygen configuration file
-      - name: Generate Doxyfile
-        run: |
-          cat > docs/Doxyfile << EOL
-          # General configuration
-          PROJECT_NAME           = fbgl
-          PROJECT_NUMBER         = 0.1.0
-          PROJECT_BRIEF          = "Documentation for the fbgl library"
-          OUTPUT_DIRECTORY       = docs
-          CREATE_SUBDIRS         = YES
-          OPTIMIZE_OUTPUT_FOR_C  = YES
-          GENERATE_HTML          = YES
-          GENERATE_LATEX         = NO
-          GENERATE_MAN           = NO
-          GENERATE_RTF           = NO
-          GENERATE_XML           = NO
+    - name: Clone m.css
+      run: |
+        git clone https://github.com/mosra/m.css.git
 
-          # Input sources
-          INPUT                  = fbgl.h README.md
-          FILE_PATTERNS          = *.h README.md
-          RECURSIVE              = NO
-          EXCLUDE_PATTERNS       = test/*
+    - name: Generate Doxyfile
+      run: |
+        doxygen -g Doxyfile
 
-          # Markdown support
-          USE_MDFILE_AS_MAINPAGE = README.md
-          MARKDOWN_SUPPORT       = YES
+    - name: Customize Doxyfile
+      run: |
+        # Project details
+        sed -i 's/PROJECT_NAME           = "My Project"/PROJECT_NAME           = "FBGL"/' Doxyfile
+        sed -i 's/PROJECT_BRIEF          = /PROJECT_BRIEF          = "Fast and Lightweight Framebuffer Graphics Library"/' Doxyfile
+        
+        # Output and input configuration
+        sed -i 's/OUTPUT_DIRECTORY       = /OUTPUT_DIRECTORY       = docs/' Doxyfile
+        sed -i 's/INPUT                  = /INPUT                  = fbgl.h README.md/' Doxyfile
+        sed -i 's/RECURSIVE              = NO/RECURSIVE              = YES/' Doxyfile
+        
+        # Documentation generation options
+        sed -i 's/GENERATE_HTML          = NO/GENERATE_HTML          = YES/' Doxyfile
+        sed -i 's/HAVE_DOT               = NO/HAVE_DOT               = YES/' Doxyfile
+        sed -i 's/DOT_IMAGE_FORMAT       = png/DOT_IMAGE_FORMAT       = svg/' Doxyfile
+        
+        # m.css and additional configurations
+        echo "HTML_EXTRA_STYLESHEET  = m.css/css/m-dark.compiled.css m.css/css/m-documentation.compiled.css" >> Doxyfile
+        echo "GENERATE_LATEX         = NO" >> Doxyfile
+        echo "INTERACTIVE_SVG        = YES" >> Doxyfile
+        echo "EXTRACT_ALL            = YES" >> Doxyfile
+        echo "EXTRACT_PRIVATE        = NO" >> Doxyfile
+        echo "CASE_SENSE_NAMES       = NO" >> Doxyfile
+        echo "SEARCHENGINE           = YES" >> Doxyfile
+        echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
+        echo "MARKDOWN_SUPPORT       = YES" >> Doxyfile
 
-          # Extract documentation
-          EXTRACT_ALL            = YES
-          EXTRACT_PRIVATE        = NO
-          EXTRACT_STATIC         = YES
-          EXTRACT_LOCAL_CLASSES  = YES
-          EXTRACT_LOCAL_METHODS  = YES
+    - name: Generate Documentation with Doxygen
+      run: |
+        doxygen Doxyfile
 
-          # Source browsing
-          SOURCE_BROWSER         = YES
-          INLINE_SOURCES         = YES
-          REFERENCED_BY_RELATION = YES
-          REFERENCES_RELATION    = YES
+    - name: Process Documentation with m.css
+      run: |
+        python m.css/documentation/doxygen.py Doxyfile
 
-          # Documentation styling for m.css
-          HTML_OUTPUT            = html
-          HTML_EXTRA_STYLESHEET  = "\
-              m.css/output/m-dark.compiled.css \
-              m.css/output/m-documentation.compiled.css"
-          HTML_DYNAMIC_SECTIONS  = YES
-          GENERATE_TREEVIEW      = YES
+    - name: Setup GitHub Pages
+      uses: actions/configure-pages@v3
 
-          # Search functionality
-          SEARCHENGINE           = YES
-          SERVER_BASED_SEARCH    = NO
-          EXTERNAL_SEARCH        = NO
-          SEARCHDATA_FILE        = searchdata.xml
+    - name: Upload Documentation Artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './docs/html'
 
-          # Warnings
-          WARNINGS               = YES
-          WARN_IF_UNDOCUMENTED   = YES
-          WARN_NO_PARAMDOC       = YES
-          WARN_FORMAT            = "\$file:\$line: \$text"
-
-          # Extra configurations
-          ALIASES                = "note=\par\textbf{Note:}"
-          ALIASES               += "todo=\par\textbf{TODO:}"
-          ALIASES               += "bug=\par\textbf{Bug:}"
-          EXCLUDE_SYMBOLS        = "*Test*"
-
-          # Graph and diagram support
-          HAVE_DOT               = YES
-          DOT_GRAPH_MAX_NODES    = 50
-          DOT_TRANSPARENT        = YES
-          DOT_IMAGE_FORMAT       = svg
-          CALL_GRAPH             = YES
-          CALLER_GRAPH           = YES
-          CLASS_DIAGRAMS         = YES
-          DOT_MULTI_TARGETS      = YES
-          EOL
-
-      # Generate Doxygen documentation
-      - name: Generate Doxygen documentation
-        run: |
-          # Ensure output directory exists
-          mkdir -p m.css/output
-          # Generate CSS using m.css Python script
-          python3 mcss/documentation/css.py dark documentation
-          # Run Doxygen
-          doxygen docs/Doxyfile
-
-      # Deploy to GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: generate-docs
+    steps:
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/html
-          force_orphan: true
-          full_commit_message: Update documentation
+        id: deployment
+        uses: actions/deploy-pages@v2
