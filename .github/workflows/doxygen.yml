@@ -23,13 +23,15 @@ jobs:
         run: doxygen -g Doxyfile
 
       # Step 4: Configure Doxygen
-        # Update Doxyfile to document only fbgl.h and set output directory
+        # Update Doxyfile to document only fbgl.h, use README.md as homepage, and set version
       - name: Update Doxyfile
         run: |
           sed -i 's/^PROJECT_NAME.*/PROJECT_NAME = "fbgl"/' Doxyfile
+          sed -i 's/^PROJECT_NUMBER.*/PROJECT_NUMBER = 0.1.0/' Doxyfile
           sed -i 's/^OUTPUT_DIRECTORY.*/OUTPUT_DIRECTORY = docs/' Doxyfile
-          sed -i 's/^INPUT.*/INPUT = fbgl.h/' Doxyfile
-          sed -i 's/^FILE_PATTERNS.*/FILE_PATTERNS = fbgl.h/' Doxyfile
+          sed -i 's/^INPUT.*/INPUT = fbgl.h README.md/' Doxyfile
+          sed -i 's/^USE_MDFILE_AS_MAINPAGE.*/USE_MDFILE_AS_MAINPAGE = README.md/' Doxyfile
+          sed -i 's/^FILE_PATTERNS.*/FILE_PATTERNS = fbgl.h README.md/' Doxyfile
           sed -i 's/^RECURSIVE.*/RECURSIVE = NO/' Doxyfile
           sed -i 's/^GENERATE_LATEX.*/GENERATE_LATEX = NO/' Doxyfile
           sed -i 's/^GENERATE_MAN.*/GENERATE_MAN = NO/' Doxyfile
