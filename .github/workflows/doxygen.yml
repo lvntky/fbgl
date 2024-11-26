@@ -1,150 +1,57 @@
-name: Generate and Deploy Documentation
+name: Generate and Deploy Doxygen Documentation
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-  workflow_dispatch:  # Allow manual triggering
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    branches:
+      - master  # Replace with your default branch if different
 
 jobs:
-  generate-docs:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
+      # Step 2: Install Doxygen
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y doxygen graphviz ghostscript
+      # Step 3: Generate Doxygen configuration
+      - name: Generate Doxygen Config
+        run: doxygen -g Doxyfile
 
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install jinja2 Pygments
+      # Step 4: Configure Doxygen
+        # Update Doxyfile to document only fbgl.h and set output directory
+      - name: Update Doxyfile
+        run: |
+          sed -i 's/^PROJECT_NAME.*/PROJECT_NAME = "fbgl"/' Doxyfile
+          sed -i 's/^OUTPUT_DIRECTORY.*/OUTPUT_DIRECTORY = docs/' Doxyfile
+          sed -i 's/^INPUT.*/INPUT = fbgl.h/' Doxyfile
+          sed -i 's/^FILE_PATTERNS.*/FILE_PATTERNS = fbgl.h/' Doxyfile
+          sed -i 's/^RECURSIVE.*/RECURSIVE = NO/' Doxyfile
+          sed -i 's/^GENERATE_LATEX.*/GENERATE_LATEX = NO/' Doxyfile
+          sed -i 's/^GENERATE_MAN.*/GENERATE_MAN = NO/' Doxyfile
+          sed -i 's/^GENERATE_RTF.*/GENERATE_RTF = NO/' Doxyfile
+          sed -i 's/^HTML_OUTPUT.*/HTML_OUTPUT = html/' Doxyfile
+          sed -i 's/^QUIET.*/QUIET = YES/' Doxyfile
 
-    - name: Clone Doxygen Awesome
-      run: |
-        git clone https://github.com/jothepro/doxygen-awesome-css.git
-
-    - name: Generate Doxyfile
-      run: |
-        doxygen -g Doxyfile
-
-    - name: Customize Doxyfile
-      run: |
-        # Project details
-        sed -i 's/PROJECT_NAME           = "My Project"/PROJECT_NAME           = "FBGL"/' Doxyfile
-        sed -i 's/PROJECT_BRIEF          = /PROJECT_BRIEF          = "Fast and Lightweight Framebuffer Graphics Library"/' Doxyfile
-        
-        # Output and input configuration
-        sed -i 's/OUTPUT_DIRECTORY       = /OUTPUT_DIRECTORY       = docs/' Doxyfile
-        sed -i 's/INPUT                  = /INPUT                  = fbgl.h README.md/' Doxyfile
-        sed -i 's/RECURSIVE              = NO/RECURSIVE              = YES/' Doxyfile
-        
-        # Documentation generation options
-        sed -i 's/GENERATE_HTML          = NO/GENERATE_HTML          = YES/' Doxyfile
-        sed -i 's/HAVE_DOT               = NO/HAVE_DOT               = YES/' Doxyfile
-        sed -i 's/DOT_IMAGE_FORMAT       = png/DOT_IMAGE_FORMAT       = svg/' Doxyfile
-        
-        # Doxygen Awesome specific configurations
-        echo "HTML_EXTRA_STYLESHEET = $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome.css" >> Doxyfile
-        echo "HTML_COLORSTYLE = LIGHT" >> Doxyfile
-        
-        # Additional configuration
-        echo "GENERATE_LATEX         = NO" >> Doxyfile
-        echo "INTERACTIVE_SVG        = YES" >> Doxyfile
-        echo "EXTRACT_ALL            = YES" >> Doxyfile
-        echo "EXTRACT_PRIVATE        = NO" >> Doxyfile
-        echo "CASE_SENSE_NAMES       = NO" >> Doxyfile
-        echo "SEARCHENGINE           = YES" >> Doxyfile
-        echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
-        echo "MARKDOWN_SUPPORT       = YES" >> Doxyfile
-        
-        # Dark mode support
-        echo "HTML_EXTRA_STYLESHEET += $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome-darkmode.css" >> Doxyfile
-
-        # Interactive tabs and fragment copy buttons
-        echo "HTML_EXTRA_FILES += $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js" >> Doxyfile
-        echo "HTML_EXTRA_FILES += $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome-interactive-toc.js" >> Doxyfile
-
-    - name: Generate Documentation with Doxygen
-      run: |
-        doxygen Doxyfile
-
-    - name: Fallback Documentation Strategy
-      shell: bash
-      run: |
-        set -e
-        
-        if [ -d "docs/html" ] && [ "$(ls -A docs/html)" ]; then
-          echo "Documentation generated successfully"
-        else
-          echo "Documentation generation failed. Creating fallback documentation."
-          
+      # Step 5: Add Doxygen Awesome CSS for modern UI
+      - name: Add Doxygen Awesome CSS
+        run: |
           mkdir -p docs/html
-          
-          cat > docs/html/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <title>FBGL Documentation</title>
-              <style>
-                  body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 1rem; background-color: #f4f4f4; }
-                  h1 { color: #333; border-bottom: 2px solid #666; padding-bottom: 10px; }
-                  p { color: #666; }
-                  .error { color: #d9534f; font-weight: bold; }
-              </style>
-          </head>
-          <body>
-              <h1>FBGL Documentation</h1>
-              <p class="error">Documentation generation failed.</p>
-              <p>Possible reasons:</p>
-              <ul>
-                  <li>Doxygen configuration issue</li>
-                  <li>Missing source files</li>
-                  <li>Unexpected build error</li>
-              </ul>
-              <p>Please check the repository and GitHub Actions workflow for more details.</p>
-          </body>
-          </html>
-          EOF
-        fi
+          curl -o docs/html/doxygen-awesome.css https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome.css
+          echo 'HTML_EXTRA_STYLESHEET = docs/html/doxygen-awesome.css' >> Doxyfile
 
-    - name: List Documentation Contents
-      run: |
-        echo "Documentation directory contents:"
-        ls -R docs/html
+      # Step 6: Run Doxygen to generate the documentation
+      - name: Run Doxygen
+        run: doxygen Doxyfile
 
-    - name: Setup GitHub Pages
-      uses: actions/configure-pages@v3
-
-    - name: Upload Documentation Artifact
-      uses: actions/upload-pages-artifact@v2
-      with:
-        path: './docs/html'
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: generate-docs
-    steps:
+      # Step 7: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/html
+          publish_branch: gh-pages
