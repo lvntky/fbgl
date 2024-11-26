@@ -36,13 +36,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install jinja2 Pygments rcssmin
 
-    - name: Clone m.css
+    - name: Clone m.css with Verbose Output
       run: |
-        git clone https://github.com/mosra/m.css.git
+        git clone --verbose https://github.com/mosra/m.css.git
+        cd m.css
+        ls -R documentation
+        pwd
 
     - name: Prepare m.css stylesheets
       run: |
-        # Navigate to m.css css directory
         cd m.css/css
         
         # Create compiled CSS manually
@@ -93,13 +95,19 @@ jobs:
       run: |
         doxygen Doxyfile
 
-    - name: Process Documentation with m.css (Fallback Strategy)
+    - name: Process Documentation with m.css (Robust Strategy)
       shell: bash
       run: |
-        # Explicit bash shell to ensure proper error handling
         set -e  # Exit immediately if a command exits with a non-zero status.
         
-        # Try m.css processing with error handling
+        # Debug information
+        echo "Python version:"
+        python --version
+        
+        echo "m.css directory contents:"
+        ls -R m.css/documentation
+        
+        # Try m.css processing with comprehensive error handling
         if python m.css/documentation/doxygen.py Doxyfile; then
           echo "M.css processing successful"
         else
@@ -108,7 +116,7 @@ jobs:
           # Ensure docs/html exists
           mkdir -p docs/html
           
-          # Create a basic index.html
+          # Create a detailed fallback index.html
           cat > docs/html/index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
@@ -116,15 +124,22 @@ jobs:
               <meta charset="UTF-8">
               <title>FBGL Documentation</title>
               <style>
-                  body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 1rem; }
-                  h1 { color: #333; }
+                  body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 1rem; background-color: #f4f4f4; }
+                  h1 { color: #333; border-bottom: 2px solid #666; padding-bottom: 10px; }
                   p { color: #666; }
+                  .error { color: #d9534f; font-weight: bold; }
               </style>
           </head>
           <body>
               <h1>FBGL Documentation</h1>
-              <p>Documentation generation encountered an issue. Please check the repository for the most up-to-date information.</p>
-              <p>View the project on GitHub for more details.</p>
+              <p class="error">Documentation generation encountered an issue.</p>
+              <p>Possible reasons:</p>
+              <ul>
+                  <li>M.css processing script failed</li>
+                  <li>Doxygen configuration issue</li>
+                  <li>Missing dependencies</li>
+              </ul>
+              <p>Please check the repository and GitHub Actions workflow for more details.</p>
           </body>
           </html>
           EOF
