@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Variables
-TINYCORE_URL="http://tinycorelinux.net/14.x/x86/release/TinyCore-current.iso"  # TinyCore Linux ISO URL
-ISO_FILE="TinyCore.iso"                 # TinyCore Linux ISO file
+TINYCORE_URL="http://tinycorelinux.net/14.x/x86_64/release/CorePure64-current.iso"  # 64-bit TinyCore Linux ISO
+ISO_FILE="CorePure64.iso"               # TinyCore Linux ISO file
 DISK_IMAGE="tinycore_disk.img"          # Writable disk image for TinyCore
 DISK_SIZE="64M"                         # Size of the writable disk
 MOUNT_DIR="mnt_tinycore"                # Temporary mount point for disk
@@ -29,9 +29,9 @@ for tool in "${REQUIRED_TOOLS[@]}"; do
     fi
 done
 
-# Step 1: Download TinyCore Linux ISO if not already present
+# Step 1: Download 64-bit TinyCore Linux ISO if not already present
 if [ ! -f "$ISO_FILE" ]; then
-    echo "Downloading TinyCore Linux ISO..."
+    echo "Downloading 64-bit TinyCore Linux ISO..."
     wget -O $ISO_FILE $TINYCORE_URL
 fi
 
@@ -48,14 +48,12 @@ sudo cp "$BINARY" $MOUNT_DIR/
 sudo umount $MOUNT_DIR
 rmdir $MOUNT_DIR
 
-# Step 4: Run TinyCore Linux in QEMU
-echo "Running TinyCore Linux in QEMU..."
+# Step 4: Run TinyCore Linux in QEMU without graphical interface
+echo "Running TinyCore Linux in terminal mode with QEMU..."
 qemu-system-x86_64 \
     -cdrom $ISO_FILE \
     -hda $DISK_IMAGE \
     -m 512M \
-    -vga std \
-    -display gtk \
-    -boot d
+    -append "loglevel=3 tce=sda1 init=/init"
 
 echo "QEMU exited. Check above for errors or results."
