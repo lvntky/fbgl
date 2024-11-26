@@ -28,9 +28,9 @@ jobs:
       - name: Configure m.css
         run: |
           cp mcss/css/m-dark+documentation.compiled.css ./docs/m-dark.css
-          cp mcss/documentation/templates/doxygen/base-class-reference.html ./docs/base-class-reference.html
           cp mcss/css/m-dark.compiled.css ./docs/m-dark.compiled.css
           cp mcss/css/m-light.compiled.css ./docs/m-light.compiled.css
+          cp mcss/documentation/search.js ./docs/m.js
 
       # Generate Doxygen documentation
       - name: Generate Doxygen documentation

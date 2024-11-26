@@ -10,7 +10,6 @@ GENERATE_LATEX         = NO
 GENERATE_MAN           = NO
 GENERATE_RTF           = NO
 GENERATE_XML           = NO
-GENERATE_JSON          = NO
 
 # Input sources
 INPUT                  = fbgl.h README.md
@@ -41,8 +40,8 @@ HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
 
 # Integrating Doxygen with m.css
-HTML_EXTRA_STYLESHEET  = ./docs/m-dark.css
-HTML_EXTRA_FILES       = ./docs/m.js
+HTML_EXTRA_STYLESHEET  = ./m-dark.css
+HTML_EXTRA_FILES       = ./m.js
 
 # Warnings
 WARNINGS               = YES
