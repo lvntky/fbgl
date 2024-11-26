@@ -1,4 +1,4 @@
-name: Generate and Deploy Doxygen Documentation
+name: Generate and Deploy Doxygen Documentation with m.css
 
 on:
   push:
@@ -14,13 +14,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Doxygen and dependencies
-      - name: Install Doxygen and Python
+      # Step 2: Install Doxygen, Python, and required dependencies
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz python3 python3-pip
           pip3 install --upgrade pip
-          pip3 install mkdocs
+          pip3 install git+https://github.com/mosra/m.css.git
 
       # Step 3: Download m.css theme
       - name: Download m.css
@@ -44,14 +44,23 @@ jobs:
           echo "GENERATE_MAN = NO" >> Doxyfile
           echo "GENERATE_RTF = NO" >> Doxyfile
           echo "QUIET = YES" >> Doxyfile
-          echo "HTML_EXTRA_STYLESHEET = docs/m.css/css/m-dark.css" >> Doxyfile
-          echo "HTML_EXTRA_FILES = docs/m.css" >> Doxyfile
+          echo "EXTENSION_MAPPING = md=markdown" >> Doxyfile
+          echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
 
-      # Step 5: Run Doxygen
+      # Step 5: Run Doxygen to generate raw HTML files
       - name: Run Doxygen
         run: doxygen Doxyfile
 
-      # Step 6: Deploy to GitHub Pages
+      # Step 6: Process HTML with m.css
+      - name: Apply m.css
+        run: |
+          python3 docs/m.css/documentation/doxygen.py \
+            --input docs/html \
+            --output docs/html \
+            --site-root . \
+            --deploy
+
+      # Step 7: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
