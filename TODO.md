@@ -5,7 +5,7 @@
 - [ ] Implement basic shapes:
   - [x] Draw lines.
   - [x] Draw rectangles.
-  - [ ] Draw circles.
+  - [x] Draw circles.
   - [ ] Draw ellipses.
   - [ ] Draw polygons.
   - [x] Support filled versions of shapes.

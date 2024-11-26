@@ -181,6 +181,7 @@ Contributions are welcome! If you’d like to improve `fbgl`, add features, or f
 
 - Inspired by the simplicity of low-level graphics programming.
 - Thanks to the Linux community for making framebuffer programming accessible!
+- See the [acknowledgements](./acknowledgements.md) for more details.
 
 ---
 
