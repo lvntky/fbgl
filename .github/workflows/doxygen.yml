@@ -18,39 +18,18 @@ jobs:
       - name: Install Doxygen
         run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
 
-      # Step 3: Generate Doxygen configuration
-      - name: Generate Doxygen Config
-        run: doxygen -g Doxyfile
-
-      # Step 4: Configure Doxygen
-        # Update Doxyfile to document only fbgl.h, use README.md as homepage, and set version
-      - name: Update Doxyfile
+      # Step 3: Ensure docs directory exists and download Doxygen Awesome files
+      - name: Setup Doxygen Awesome Theme
         run: |
-          sed -i 's/^PROJECT_NAME.*/PROJECT_NAME = "fbgl"/' Doxyfile
-          sed -i 's/^PROJECT_NUMBER.*/PROJECT_NUMBER = 0.1.0/' Doxyfile
-          sed -i 's/^OUTPUT_DIRECTORY.*/OUTPUT_DIRECTORY = docs/' Doxyfile
-          sed -i 's/^INPUT.*/INPUT = fbgl.h README.md/' Doxyfile
-          sed -i 's/^USE_MDFILE_AS_MAINPAGE.*/USE_MDFILE_AS_MAINPAGE = README.md/' Doxyfile
-          sed -i 's/^FILE_PATTERNS.*/FILE_PATTERNS = fbgl.h README.md/' Doxyfile
-          sed -i 's/^RECURSIVE.*/RECURSIVE = NO/' Doxyfile
-          sed -i 's/^GENERATE_LATEX.*/GENERATE_LATEX = NO/' Doxyfile
-          sed -i 's/^GENERATE_MAN.*/GENERATE_MAN = NO/' Doxyfile
-          sed -i 's/^GENERATE_RTF.*/GENERATE_RTF = NO/' Doxyfile
-          sed -i 's/^HTML_OUTPUT.*/HTML_OUTPUT = html/' Doxyfile
-          sed -i 's/^QUIET.*/QUIET = YES/' Doxyfile
+          mkdir -p docs
+          curl -o docs/doxygen-awesome.css https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome.css
+          curl -o docs/doxygen-awesome-darkmode-toggle.js https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome-darkmode-toggle.js
 
-      # Step 5: Add Doxygen Awesome CSS for modern UI
-      - name: Add Doxygen Awesome CSS
-        run: |
-          mkdir -p docs/html
-          curl -o docs/html/doxygen-awesome.css https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome.css
-          echo 'HTML_EXTRA_STYLESHEET = docs/html/doxygen-awesome.css' >> Doxyfile
-
-      # Step 6: Run Doxygen to generate the documentation
+      # Step 4: Run Doxygen using the existing Doxyfile
       - name: Run Doxygen
         run: doxygen Doxyfile
 
-      # Step 7: Deploy to GitHub Pages
+      # Step 5: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:

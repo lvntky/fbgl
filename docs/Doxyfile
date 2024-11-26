@@ -1,0 +1,23 @@
+# Project settings
+PROJECT_NAME           = fbgl
+PROJECT_NUMBER         = 0.1.0
+OUTPUT_DIRECTORY       = docs
+USE_MDFILE_AS_MAINPAGE = README.md
+INPUT                  = fbgl.h README.md
+FILE_PATTERNS          = *.h *.md
+RECURSIVE              = NO
+
+# HTML output settings
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_EXTRA_FILES       = doxygen-style.css doxygen-dark.js
+HTML_EXTRA_STYLESHEET  = doxygen-style.css
+HTML_EXTRA_SCRIPTS     = doxygen-dark.js
+
+# Turn off unwanted formats
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+
+# Quiet mode
+QUIET                  = YES
