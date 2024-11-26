@@ -42,8 +42,6 @@ jobs:
           echo "GENERATE_RTF = NO" >> Doxyfile
           echo "QUIET = YES" >> Doxyfile
           echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
-          echo "EXTENSION_MAPPING = md=markdown" >> Doxyfile
-          echo "HTML_EXTRA_FILES = docs/m.css/css/m-dark.css docs/m.css/css/m-components.css docs/m.css/css/m-layout.css docs/m.css/css/m-style.css docs/m.css/css/m-theme.css docs/m.css/js/m.js docs/m.css/js/m-search.js" >> Doxyfile
 
       # Step 5: Run Doxygen
       - name: Run Doxygen
