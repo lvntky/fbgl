@@ -18,18 +18,12 @@ jobs:
       - name: Install Doxygen
         run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
 
-      # Step 3: Ensure docs directory exists and download Doxygen Awesome files
-      - name: Setup Doxygen Awesome Theme
-        run: |
-          mkdir -p docs
-          curl -o docs/doxygen-style.css https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome.css
-          curl -o docs/doxygen-dark.js https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/main/doxygen-awesome-darkmode-toggle.js
-
-      # Step 4: Run Doxygen using the existing Doxyfile
+      # Step 3: Run Doxygen using the existing Doxyfile
       - name: Run Doxygen
+        working-directory: docs
         run: doxygen Doxyfile
 
-      # Step 5: Deploy to GitHub Pages
+      # Step 4: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
