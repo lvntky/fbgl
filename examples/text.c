@@ -16,35 +16,35 @@ int save_framebuffer_as_ppm(fbgl_t *fb, const char *filename)
 	}
 
 	// Write PPM header (P6 format - binary RGB)
-	fprintf(fp, "P6\n%zu %zu\n255\n", fb->width, fb->height);
+        fprintf(fp, "P6\n%u %u\n255\n", fb->width, fb->height);
 
-	// Allocate buffer for pixel data
-	uint8_t *pixel_buffer = malloc(fb->width * fb->height * 3);
-	if (!pixel_buffer) {
+        // Allocate buffer for pixel data
+        uint8_t* pixel_buffer = malloc(fb->width * fb->height * 3);
+        if (!pixel_buffer) {
 		perror("Memory allocation error");
 		fclose(fp);
 		return -1;
 	}
 
 	// Convert framebuffer to RGB
-	for (size_t y = 0; y < fb->height; y++) {
-		for (size_t x = 0; x < fb->width; x++) {
-			uint32_t pixel = fb->pixels[y * fb->width + x];
+        for (int32_t y = 0; y < fb->height; y++) {
+            for (int32_t x = 0; x < fb->width; x++) {
+                uint32_t pixel = fb->pixels[y * fb->width + x];
 
-			// Extract RGB components (assuming 32-bit ARGB or RGB)
-			uint8_t r = (pixel >> 16) & 0xFF;
-			uint8_t g = (pixel >> 8) & 0xFF;
-			uint8_t b = pixel & 0xFF;
+                // Extract RGB components (assuming 32-bit ARGB or RGB)
+                uint8_t r = (pixel >> 16) & 0xFF;
+                uint8_t g = (pixel >> 8) & 0xFF;
+                uint8_t b = pixel & 0xFF;
 
-			// Store in buffer for PPM
-			pixel_buffer[(y * fb->width + x) * 3] = r;
-			pixel_buffer[(y * fb->width + x) * 3 + 1] = g;
-			pixel_buffer[(y * fb->width + x) * 3 + 2] = b;
-		}
-	}
+                // Store in buffer for PPM
+                pixel_buffer[(y * fb->width + x) * 3] = r;
+                pixel_buffer[(y * fb->width + x) * 3 + 1] = g;
+                pixel_buffer[(y * fb->width + x) * 3 + 2] = b;
+            }
+        }
 
-	// Write pixel data
-	fwrite(pixel_buffer, 1, fb->width * fb->height * 3, fp);
+        // Write pixel data
+        fwrite(pixel_buffer, 1, fb->width * fb->height * 3, fp);
 
 	// Cleanup
 	free(pixel_buffer);
