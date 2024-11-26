@@ -1,44 +1,128 @@
 name: Generate and Deploy Doxygen Documentation
-
 on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       # Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # Install Doxygen and Graphviz
-      - name: Set up Doxygen
-        run: sudo apt-get install -y doxygen graphviz
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
 
-      # Clone the m.css repository
+      # Clone m.css
       - name: Clone m.css
         run: |
-          git clone --depth 1 https://github.com/mosra/m.css.git mcss
-          ls -R mcss
+          git clone --depth 1 https://github.com/mosra/m.css.git
 
-      # Configure m.css by copying necessary files
-      - name: Configure m.css
+      # Prepare documentation configuration
+      - name: Prepare Doxygen configuration
         run: |
-          cp mcss/css/m-dark+documentation.compiled.css ./docs/m-dark.css
-          cp mcss/css/m-dark.compiled.css ./docs/m-dark.compiled.css
-          cp mcss/css/m-light.compiled.css ./docs/m-light.compiled.css
-          cp mcss/documentation/search.js ./docs/m.js
+          mkdir -p docs
+          cp mcss/css/m-dark.compiled.css docs/
+          cp mcss/css/m-documentation.compiled.css docs/
+          cp mcss/documentation/search.js docs/
+
+      # Generate Doxygen configuration file
+      - name: Generate Doxyfile
+        run: |
+          mkdir -p docs
+          cat > docs/Doxyfile << EOL
+          # General configuration
+          PROJECT_NAME           = fbgl
+          PROJECT_NUMBER         = 0.1.0
+          PROJECT_BRIEF          = "Documentation for the fbgl library"
+          OUTPUT_DIRECTORY       = docs
+          CREATE_SUBDIRS         = YES
+          OPTIMIZE_OUTPUT_FOR_C  = YES
+          GENERATE_HTML          = YES
+          GENERATE_LATEX         = NO
+          GENERATE_MAN           = NO
+          GENERATE_RTF           = NO
+          GENERATE_XML           = NO
+
+          # Input sources
+          INPUT                  = fbgl.h README.md
+          FILE_PATTERNS          = *.h README.md
+          RECURSIVE              = NO
+          EXCLUDE_PATTERNS       = test/*
+
+          # Markdown support
+          USE_MDFILE_AS_MAINPAGE = README.md
+          MARKDOWN_SUPPORT       = YES
+
+          # Extract documentation
+          EXTRACT_ALL            = YES
+          EXTRACT_PRIVATE        = NO
+          EXTRACT_STATIC         = YES
+          EXTRACT_LOCAL_CLASSES  = YES
+          EXTRACT_LOCAL_METHODS  = YES
+
+          # Source browsing
+          SOURCE_BROWSER         = YES
+          INLINE_SOURCES         = YES
+          REFERENCED_BY_RELATION = YES
+          REFERENCES_RELATION    = YES
+
+          # Documentation styling for m.css
+          HTML_OUTPUT            = html
+          HTML_EXTRA_STYLESHEET  = \
+              "m-dark.compiled.css" \
+              "m-documentation.compiled.css"
+          HTML_DYNAMIC_SECTIONS  = YES
+          GENERATE_TREEVIEW      = YES
+
+          # Search functionality
+          SEARCHENGINE           = YES
+          SERVER_BASED_SEARCH    = NO
+          EXTERNAL_SEARCH        = NO
+          SEARCHDATA_FILE        = searchdata.xml
+
+          # Warnings
+          WARNINGS               = YES
+          WARN_IF_UNDOCUMENTED   = YES
+          WARN_NO_PARAMDOC       = YES
+          WARN_FORMAT            = "\$file:\$line: \$text"
+
+          # Extra configurations
+          ALIASES                = "note=\par\textbf{Note:}"
+          ALIASES               += "todo=\par\textbf{TODO:}"
+          ALIASES               += "bug=\par\textbf{Bug:}"
+          EXCLUDE_SYMBOLS        = "*Test*"
+
+          # Graph and diagram support
+          HAVE_DOT               = YES
+          DOT_GRAPH_MAX_NODES    = 50
+          DOT_TRANSPARENT        = YES
+          DOT_IMAGE_FORMAT       = svg
+          CALL_GRAPH             = YES
+          CALLER_GRAPH           = YES
+          CLASS_DIAGRAMS         = YES
+          DOT_MULTI_TARGETS      = YES
+          EOL
 
       # Generate Doxygen documentation
       - name: Generate Doxygen documentation
         run: doxygen docs/Doxyfile
 
-      # Deploy the generated documentation to GitHub Pages
+      # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/html
+          force_orphan: true
+          full_commit_message: Update documentation

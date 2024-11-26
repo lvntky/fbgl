@@ -34,14 +34,16 @@ INLINE_SOURCES         = YES
 REFERENCED_BY_RELATION = YES
 REFERENCES_RELATION    = YES
 
-# Documentation styling
+# Documentation styling for m.css
 HTML_OUTPUT            = html
+HTML_EXTRA_STYLESHEET  = 
+    "mcss/css/m-dark.compiled.css" \
+    "mcss/css/m-documentation.compiled.css"
+HTML_HEADER            = "header.html"
+HTML_FOOTER            = "footer.html"
+HTML_STYLESHEET        = 
 HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
-
-# Integrating Doxygen with m.css
-HTML_EXTRA_STYLESHEET  = ./m-dark.css
-HTML_EXTRA_FILES       = ./m.js
 
 # Warnings
 WARNINGS               = YES
