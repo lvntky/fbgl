@@ -3,7 +3,7 @@ name: Generate and Deploy Doxygen Documentation with m.css
 on:
   push:
     branches:
-      - master  # Replace with your default branch if different
+      - master
 
 jobs:
   build:
@@ -23,7 +23,6 @@ jobs:
       # Step 3: Clone m.css repository
       - name: Clone m.css
         run: |
-          mkdir -p docs/m.css
           git clone --depth 1 https://github.com/mosra/m.css.git docs/m.css
 
       # Step 4: Create Doxyfile
@@ -42,12 +41,10 @@ jobs:
           echo "GENERATE_MAN = NO" >> Doxyfile
           echo "GENERATE_RTF = NO" >> Doxyfile
           echo "QUIET = YES" >> Doxyfile
-          echo "EXTENSION_MAPPING = md=markdown" >> Doxyfile
           echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
-          echo "HTML_EXTRA_STYLESHEET = docs/m.css/css/m-dark.css" >> Doxyfile
           echo "HTML_EXTRA_FILES = docs/m.css/js/m.js docs/m.css/js/m-search.js docs/m.css/css/m-components.css docs/m.css/css/m-layout.css docs/m.css/css/m-style.css docs/m.css/css/m-theme.css" >> Doxyfile
 
-      # Step 5: Run Doxygen to generate raw HTML files
+      # Step 5: Run Doxygen
       - name: Run Doxygen
         run: doxygen Doxyfile
 
