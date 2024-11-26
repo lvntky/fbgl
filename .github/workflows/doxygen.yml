@@ -14,16 +14,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Doxygen, Python, and required dependencies
-      - name: Install Dependencies
+      # Step 2: Install Doxygen and Python
+      - name: Install Doxygen and Python
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz python3 python3-pip
-          pip3 install --upgrade pip
-          pip3 install git+https://github.com/mosra/m.css.git
 
-      # Step 3: Download m.css theme
-      - name: Download m.css
+      # Step 3: Clone m.css repository
+      - name: Clone m.css
         run: |
           mkdir -p docs/m.css
           git clone --depth 1 https://github.com/mosra/m.css.git docs/m.css
