@@ -34,31 +34,11 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install jinja2 Pygments rcssmin
+        pip install jinja2 Pygments
 
-    - name: Clone m.css with Verbose Output
+    - name: Clone Doxygen Awesome
       run: |
-        git clone --verbose https://github.com/mosra/m.css.git
-        cd m.css
-        ls -R documentation
-        pwd
-
-    - name: Prepare m.css stylesheets
-      run: |
-        cd m.css/css
-        
-        # Create compiled CSS manually
-        echo "/* Minimal CSS fallback */" > m-documentation.compiled.css
-        echo "body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 1rem; }" >> m-documentation.compiled.css
-        echo "h1, h2 { color: #333; }" >> m-documentation.compiled.css
-        echo "pre { background-color: #f4f4f4; padding: 1rem; overflow-x: auto; }" >> m-documentation.compiled.css
-        
-        echo "/* Minimal dark theme CSS fallback */" > m-dark.compiled.css
-        echo "body { background-color: #121212; color: #e0e0e0; }" >> m-dark.compiled.css
-        echo "a { color: #4CAF50; }" >> m-dark.compiled.css
-        echo "pre { background-color: #1e1e1e; color: #e0e0e0; }" >> m-dark.compiled.css
-        
-        cd ../..
+        git clone https://github.com/jothepro/doxygen-awesome-css.git
 
     - name: Generate Doxyfile
       run: |
@@ -80,8 +60,11 @@ jobs:
         sed -i 's/HAVE_DOT               = NO/HAVE_DOT               = YES/' Doxyfile
         sed -i 's/DOT_IMAGE_FORMAT       = png/DOT_IMAGE_FORMAT       = svg/' Doxyfile
         
-        # m.css and additional configurations
-        echo "HTML_EXTRA_STYLESHEET  = $GITHUB_WORKSPACE/m.css/css/m-dark.compiled.css $GITHUB_WORKSPACE/m.css/css/m-documentation.compiled.css" >> Doxyfile
+        # Doxygen Awesome specific configurations
+        echo "HTML_EXTRA_STYLESHEET = $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome.css" >> Doxyfile
+        echo "HTML_COLORSTYLE = LIGHT" >> Doxyfile
+        
+        # Additional configuration
         echo "GENERATE_LATEX         = NO" >> Doxyfile
         echo "INTERACTIVE_SVG        = YES" >> Doxyfile
         echo "EXTRACT_ALL            = YES" >> Doxyfile
@@ -90,33 +73,30 @@ jobs:
         echo "SEARCHENGINE           = YES" >> Doxyfile
         echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
         echo "MARKDOWN_SUPPORT       = YES" >> Doxyfile
+        
+        # Dark mode support
+        echo "HTML_EXTRA_STYLESHEET += $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome-darkmode.css" >> Doxyfile
+
+        # Interactive tabs and fragment copy buttons
+        echo "HTML_EXTRA_FILES += $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js" >> Doxyfile
+        echo "HTML_EXTRA_FILES += $GITHUB_WORKSPACE/doxygen-awesome-css/doxygen-awesome-interactive-toc.js" >> Doxyfile
 
     - name: Generate Documentation with Doxygen
       run: |
         doxygen Doxyfile
 
-    - name: Process Documentation with m.css (Robust Strategy)
+    - name: Fallback Documentation Strategy
       shell: bash
       run: |
-        set -e  # Exit immediately if a command exits with a non-zero status.
+        set -e
         
-        # Debug information
-        echo "Python version:"
-        python --version
-        
-        echo "m.css directory contents:"
-        ls -R m.css/documentation
-        
-        # Try m.css processing with comprehensive error handling
-        if python m.css/documentation/doxygen.py Doxyfile; then
-          echo "M.css processing successful"
+        if [ -d "docs/html" ] && [ "$(ls -A docs/html)" ]; then
+          echo "Documentation generated successfully"
         else
-          echo "M.css processing failed. Creating fallback documentation."
+          echo "Documentation generation failed. Creating fallback documentation."
           
-          # Ensure docs/html exists
           mkdir -p docs/html
           
-          # Create a detailed fallback index.html
           cat > docs/html/index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
@@ -132,12 +112,12 @@ jobs:
           </head>
           <body>
               <h1>FBGL Documentation</h1>
-              <p class="error">Documentation generation encountered an issue.</p>
+              <p class="error">Documentation generation failed.</p>
               <p>Possible reasons:</p>
               <ul>
-                  <li>M.css processing script failed</li>
                   <li>Doxygen configuration issue</li>
-                  <li>Missing dependencies</li>
+                  <li>Missing source files</li>
+                  <li>Unexpected build error</li>
               </ul>
               <p>Please check the repository and GitHub Actions workflow for more details.</p>
           </body>
