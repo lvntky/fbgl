@@ -46,19 +46,15 @@ jobs:
         cd m.css/css
         
         # Create compiled CSS manually
-        cat << EOF > m-documentation.compiled.css
-        /* Minimal CSS fallback */
-        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 1rem; }
-        h1, h2 { color: #333; }
-        pre { background-color: #f4f4f4; padding: 1rem; overflow-x: auto; }
-        EOF
+        echo "/* Minimal CSS fallback */" > m-documentation.compiled.css
+        echo "body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 1rem; }" >> m-documentation.compiled.css
+        echo "h1, h2 { color: #333; }" >> m-documentation.compiled.css
+        echo "pre { background-color: #f4f4f4; padding: 1rem; overflow-x: auto; }" >> m-documentation.compiled.css
         
-        cat << EOF > m-dark.compiled.css
-        /* Minimal dark theme CSS fallback */
-        body { background-color: #121212; color: #e0e0e0; }
-        a { color: #4CAF50; }
-        pre { background-color: #1e1e1e; color: #e0e0e0; }
-        EOF
+        echo "/* Minimal dark theme CSS fallback */" > m-dark.compiled.css
+        echo "body { background-color: #121212; color: #e0e0e0; }" >> m-dark.compiled.css
+        echo "a { color: #4CAF50; }" >> m-dark.compiled.css
+        echo "pre { background-color: #1e1e1e; color: #e0e0e0; }" >> m-dark.compiled.css
         
         cd ../..
 
@@ -98,17 +94,22 @@ jobs:
         doxygen Doxyfile
 
     - name: Process Documentation with m.css (Fallback Strategy)
+      shell: bash
       run: |
-        # Try m.css processing, but have a backup plan
-        set +e
-        python m.css/documentation/doxygen.py Doxyfile
+        # Explicit bash shell to ensure proper error handling
+        set -e  # Exit immediately if a command exits with a non-zero status.
         
-        # If m.css processing fails, create a basic index
-        if [ $? -ne 0 ]; then
+        # Try m.css processing with error handling
+        if python m.css/documentation/doxygen.py Doxyfile; then
+          echo "M.css processing successful"
+        else
           echo "M.css processing failed. Creating fallback documentation."
           
+          # Ensure docs/html exists
+          mkdir -p docs/html
+          
           # Create a basic index.html
-          cat << EOF > docs/html/index.html
+          cat > docs/html/index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -128,6 +129,11 @@ jobs:
           </html>
           EOF
         fi
+
+    - name: List Documentation Contents
+      run: |
+        echo "Documentation directory contents:"
+        ls -R docs/html
 
     - name: Setup GitHub Pages
       uses: actions/configure-pages@v3
