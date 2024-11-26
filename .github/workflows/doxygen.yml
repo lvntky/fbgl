@@ -14,16 +14,44 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install Doxygen
-      - name: Install Doxygen
-        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+      # Step 2: Install Doxygen and dependencies
+      - name: Install Doxygen and Python
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz python3 python3-pip
+          pip3 install --upgrade pip
+          pip3 install mkdocs
 
-      # Step 3: Run Doxygen using the existing Doxyfile
+      # Step 3: Download m.css theme
+      - name: Download m.css
+        run: |
+          mkdir -p docs/m.css
+          git clone --depth 1 https://github.com/mosra/m.css.git docs/m.css
+
+      # Step 4: Create Doxyfile
+      - name: Create Doxyfile
+        run: |
+          echo "PROJECT_NAME = fbgl" > Doxyfile
+          echo "PROJECT_NUMBER = 0.1.0" >> Doxyfile
+          echo "OUTPUT_DIRECTORY = docs" >> Doxyfile
+          echo "INPUT = fbgl.h README.md" >> Doxyfile
+          echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
+          echo "FILE_PATTERNS = *.h *.md" >> Doxyfile
+          echo "RECURSIVE = NO" >> Doxyfile
+          echo "GENERATE_HTML = YES" >> Doxyfile
+          echo "HTML_OUTPUT = html" >> Doxyfile
+          echo "GENERATE_LATEX = NO" >> Doxyfile
+          echo "GENERATE_MAN = NO" >> Doxyfile
+          echo "GENERATE_RTF = NO" >> Doxyfile
+          echo "QUIET = YES" >> Doxyfile
+          echo "HTML_EXTRA_STYLESHEET = docs/m.css/css/m-dark.css" >> Doxyfile
+          echo "HTML_EXTRA_FILES = docs/m.css" >> Doxyfile
+
+      # Step 5: Run Doxygen
       - name: Run Doxygen
-        working-directory: docs
         run: doxygen Doxyfile
 
-      # Step 4: Deploy to GitHub Pages
+      # Step 6: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
