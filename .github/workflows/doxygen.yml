@@ -42,6 +42,12 @@ jobs:
           echo "GENERATE_RTF = NO" >> Doxyfile
           echo "QUIET = YES" >> Doxyfile
           echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
+          echo "LAYOUT_FILE = docs/m.css/documentation/doxygen.layout.xml" >> Doxyfile
+          echo "HTML_HEADER = docs/m.css/documentation/doxygen.header.html" >> Doxyfile
+          echo "HTML_FOOTER = docs/m.css/documentation/doxygen.footer.html" >> Doxyfile
+          echo "HTML_EXTRA_STYLESHEET = docs/m.css/documentation/doxygen.extra.css" >> Doxyfile
+          echo "HTML_EXTRA_FILES = docs/m.css/documentation/doxygen.extra.js" >> Doxyfile
+          echo "HTML_DYNAMIC_SECTIONS = YES" >> Doxyfile
 
       # Step 5: Run Doxygen
       - name: Run Doxygen
@@ -57,5 +63,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/html
-          publish_branch: gh-pages
+          publish_dir: docs
