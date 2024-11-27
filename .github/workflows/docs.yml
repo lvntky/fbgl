@@ -27,7 +27,7 @@ jobs:
         run: |
           doxygen -g
           
-          # Append required settings to Doxyfile
+          # Update Doxyfile to apply the Doxygen Awesome theme
           echo "PROJECT_NAME = fbgl" >> Doxyfile
           echo "PROJECT_NUMBER = 0.1.0" >> Doxyfile
           echo "OUTPUT_DIRECTORY = docs" >> Doxyfile
@@ -36,9 +36,13 @@ jobs:
           echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
           echo "GENERATE_TREEVIEW = YES" >> Doxyfile
           
-          # Apply Doxygen Awesome Theme via CDN
+          # Override default Doxygen CSS with Awesome theme
           echo "HTML_EXTRA_STYLESHEET = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css" >> Doxyfile
-          echo "HTML_EXTRA_FILES = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
+          echo "HTML_HEADER = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
+          
+          # Disable the default Doxygen stylesheet
+          echo "DISABLE_INDEX = NO" >> Doxyfile
+          echo "HTML_DYNAMIC_SECTIONS = YES" >> Doxyfile
 
       - name: Generate Documentation
         run: doxygen Doxyfile
