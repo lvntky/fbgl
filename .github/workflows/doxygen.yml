@@ -1,10 +1,15 @@
 name: Generate Documentation
 
 on:
+  # Triggers the workflow on push events to the main branch
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+  
+  # Triggers the workflow on pull request events to the main branch
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
+  
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -20,6 +25,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0  # This ensures full history for all branches and tags
           submodules: recursive
 
       - name: Set up Python
@@ -29,14 +35,15 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install jinja2 Pygments
           sudo apt-get update
-          sudo apt-get install -y doxygen
+          sudo apt-get install -y doxygen graphviz
 
       - name: Clone m.css
         run: |
           git clone https://github.com/mosra/m.css.git
-          
+
       - name: Prepare Doxyfile
         run: |
           doxygen -g Doxyfile
@@ -48,11 +55,12 @@ jobs:
           sed -i 's/EXTRACT_ALL.*=.*/EXTRACT_ALL            = YES/g' Doxyfile
           sed -i 's/RECURSIVE.*=.*/RECURSIVE            = YES/g' Doxyfile
           sed -i 's/GENERATE_HTML.*=.*/GENERATE_HTML        = NO/g' Doxyfile
-          
+          sed -i 's/GENERATE_XML.*=.*/GENERATE_XML         = YES/g' Doxyfile
+
       - name: Generate Documentation with m.css
         run: |
           python3 m.css/documentation/doxygen.py Doxyfile
-          
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
