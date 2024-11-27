@@ -1,6 +1,9 @@
 	
 # fbgl: Lightweight 2D Framebuffer Library for Linux
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/e9071bbf1ec345fab63a8020e7867337)](https://app.codacy.com/gh/lvntky/fbgl/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
+
 `fbgl` (Framebuffer Graphics Library) is a minimalistic, **header-only** 2D framebuffer library written in C. Designed for simplicity and performance, `fbgl` provides an intuitive API for directly manipulating the Linux framebuffer device (`/dev/fb0`). Whether you're experimenting with low-level graphics or building lightweight graphical applications, `fbgl` offers the foundation you need.
 
 ---
