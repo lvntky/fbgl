@@ -1,50 +1,56 @@
 name: Generate Doxygen Documentation
-
 on:
   push:
     branches: [master]
   workflow_dispatch:
-
 permissions:
   contents: write
   pages: write
   id-token: write
-
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
+      
       - name: Install Doxygen and Graphviz
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz
-
+      
+      - name: Prepare Doxygen Awesome CSS and JS
+        run: |
+          mkdir -p docs/css docs/js
+          wget https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css -O docs/css/doxygen-awesome.css
+          wget https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js -O docs/js/doxygen-awesome-darkmode-toggle.js
+      
       - name: Create and Configure Doxyfile
         run: |
           doxygen -g
           
-          # Update Doxyfile to apply the Doxygen Awesome theme
+          # Update Doxyfile configuration
           echo "PROJECT_NAME = fbgl" >> Doxyfile
           echo "PROJECT_NUMBER = 0.1.0" >> Doxyfile
           echo "OUTPUT_DIRECTORY = docs" >> Doxyfile
           echo "INPUT = fbgl.h README.md" >> Doxyfile
           echo "HTML_OUTPUT = html" >> Doxyfile
           echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
+          
+          # Doxygen Awesome theme configurations
           echo "GENERATE_TREEVIEW = YES" >> Doxyfile
           echo "FULL_SIDEBAR = NO" >> Doxyfile
           echo "HTML_COLORSTYLE = LIGHT" >> Doxyfile
-          
-          echo "HTML_EXTRA_STYLESHEET = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
           echo "DISABLE_INDEX = NO" >> Doxyfile
           echo "HTML_DYNAMIC_SECTIONS = YES" >> Doxyfile
-
+          
+          # Local CSS and JS paths
+          echo "HTML_EXTRA_STYLESHEET = docs/css/doxygen-awesome.css" >> Doxyfile
+          echo "HTML_EXTRA_FILES = docs/js/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
+      
       - name: Generate Documentation
         run: doxygen Doxyfile
-
+      
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
