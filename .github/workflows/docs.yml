@@ -26,6 +26,10 @@ jobs:
       - name: Clone Doxygen Awesome Theme
         run: |
           git clone https://github.com/jothepro/doxygen-awesome-css.git doxygen-awesome
+          mkdir -p docs/theme
+          cp doxygen-awesome/doxygen-awesome.css docs/theme/
+          cp doxygen-awesome/doxygen-awesome-dark-mode.css docs/theme/
+          cp doxygen-awesome/doxygen-awesome-darkmode-toggle.js docs/theme/
 
       - name: Create and Configure Doxyfile
         run: |
@@ -40,8 +44,8 @@ jobs:
           sed -i 's/^USE_MDFILE_AS_MAINPAGE *=.*$/USE_MDFILE_AS_MAINPAGE = README.md/' Doxyfile
           
           # Configure Doxygen Awesome theme
-          echo 'HTML_EXTRA_STYLESHEET = doxygen-awesome/doxygen-awesome.css doxygen-awesome/doxygen-awesome-dark-mode.css' >> Doxyfile
-          echo 'HTML_HEADER = doxygen-awesome/doxygen-awesome-darkmode-toggle.js' >> Doxyfile
+          echo 'HTML_EXTRA_STYLESHEET = docs/theme/doxygen-awesome.css docs/theme/doxygen-awesome-dark-mode.css' >> Doxyfile
+          echo 'HTML_HEADER = docs/theme/doxygen-awesome-darkmode-toggle.js' >> Doxyfile
 
       - name: Generate Documentation
         run: doxygen Doxyfile
