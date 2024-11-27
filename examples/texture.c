@@ -60,12 +60,6 @@ int main(int argc, char **argv)
 		framesize--;
 	}
 
-	// Wait for the user to press the escape key before exiting
-	printf("Press ESC to exit...\n");
-	while (!fbgl_check_esc_key()) {
-		// You can add additional rendering logic here if needed
-	}
-
 	// Clean up
 	fbgl_destroy_texture(texture);
 	fbgl_destroy(&framebuffer);

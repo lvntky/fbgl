@@ -50,7 +50,6 @@ int main(int argc, char **argv)
 
 	fbgl_psf1_font_t *font = fbgl_load_psf1_font(argv[2]);
 	while (framesize) {
-
 		// Clear the framebuffer (set background)
 		fbgl_set_bg(&framebuffer, 0x000000);
 
@@ -71,21 +70,16 @@ int main(int argc, char **argv)
 		if (texture_y <= 0 ||
 		    texture_y + texture->height >= framebuffer.height) {
 			dy = -dy; // Reverse vertical direction when hitting the top or bottom edge
-		    }
+		}
 
-		    
-		fbgl_render_psf1_text(&framebuffer, font, "FPS: ", 5, 0, 0xFF0000);
+		fbgl_render_psf1_text(&framebuffer, font, "FPS: ", 5, 0,
+				      0xFF0000);
 		char *fps = float_to_string(fbgl_get_fps());
-		fbgl_render_psf1_text(&framebuffer, font, fps, 100, 0, 0xFF0000);
+		fbgl_render_psf1_text(&framebuffer, font, fps, 100, 0,
+				      0xFF0000);
 
 		usleep(50000); // Delay to make the marquee effect visible (adjust as needed)
 		framesize--;
-	}
-
-	// Wait for the user to press the escape key before exiting
-	printf("Press ESC to exit...\n");
-	while (!fbgl_check_esc_key()) {
-		// You can add additional rendering logic here if needed
 	}
 
 	// Clean up
