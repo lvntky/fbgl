@@ -2,7 +2,7 @@ name: Generate Doxygen Documentation
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -13,8 +13,9 @@ permissions:
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install Doxygen and Graphviz
@@ -30,25 +31,17 @@ jobs:
         run: |
           doxygen -g Doxyfile
           
-          # Customize Doxyfile settings with proper sed escaping
-          sed -i 's/PROJECT_NAME *=.*$/PROJECT_NAME = "fbgl"/g' Doxyfile
-          sed -i 's/PROJECT_NUMBER *=.*$/PROJECT_NUMBER = 0.1.0/g' Doxyfile
-          sed -i 's/OUTPUT_DIRECTORY *=.*$/OUTPUT_DIRECTORY = .\/docs/g' Doxyfile
-          sed -i 's/INPUT *=.*$/INPUT = fbgl.h README.md/g' Doxyfile
-          sed -i 's/HTML_OUTPUT *=.*$/HTML_OUTPUT = .\/public\/docs\/html/g' Doxyfile
-          
-          # Ensure output directory exists
-          mkdir -p ./docs/public/docs/html
-          
-          # Set homepage to README.md
-          echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
+          # Customize Doxyfile settings
+          sed -i 's/^PROJECT_NAME *=.*$/PROJECT_NAME = "fbgl"/' Doxyfile
+          sed -i 's/^PROJECT_NUMBER *=.*$/PROJECT_NUMBER = 0.1.0/' Doxyfile
+          sed -i 's/^OUTPUT_DIRECTORY *=.*$/OUTPUT_DIRECTORY = docs/' Doxyfile
+          sed -i 's/^INPUT *=.*$/INPUT = fbgl.h README.md/' Doxyfile
+          sed -i 's/^HTML_OUTPUT *=.*$/HTML_OUTPUT = html/' Doxyfile
+          sed -i 's/^USE_MDFILE_AS_MAINPAGE *=.*$/USE_MDFILE_AS_MAINPAGE = README.md/' Doxyfile
           
           # Configure Doxygen Awesome theme
-          echo "HTML_EXTRA_STYLESHEET = doxygen-awesome/doxygen-awesome.css doxygen-awesome/doxygen-awesome-dark-mode.css" >> Doxyfile
-          
-          # Remove unsupported HTML_COLORSTYLE tag
-          # Instead, enable dark mode via CSS
-          echo "HTML_HEADER = doxygen-awesome/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
+          echo 'HTML_EXTRA_STYLESHEET = doxygen-awesome/doxygen-awesome.css doxygen-awesome/doxygen-awesome-dark-mode.css' >> Doxyfile
+          echo 'HTML_HEADER = doxygen-awesome/doxygen-awesome-darkmode-toggle.js' >> Doxyfile
 
       - name: Generate Documentation
         run: doxygen Doxyfile
@@ -58,5 +51,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./docs/public/docs/html
+          publish_dir: docs/html
           force_orphan: true
