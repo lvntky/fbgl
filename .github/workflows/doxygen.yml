@@ -2,9 +2,9 @@ name: Generate Documentation
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 permissions:
@@ -46,7 +46,7 @@ jobs:
           doxygen -g Doxyfile
           
           # Configure Doxyfile for m.css and project specifics
-          sed -i 's/PROJECT_NAME.*=.*/PROJECT_NAME           = "Your Project Name"/g' Doxyfile
+          sed -i 's/PROJECT_NAME.*=.*/PROJECT_NAME           = "fbgl"/g' Doxyfile
           sed -i 's/INPUT.*=.*/INPUT                  = README.md fbhl.h/g' Doxyfile
           sed -i 's/USE_MDFILE_AS_MAINPAGE.*=.*/USE_MDFILE_AS_MAINPAGE = README.md/g' Doxyfile
           sed -i 's/EXTRACT_ALL.*=.*/EXTRACT_ALL            = YES/g' Doxyfile
