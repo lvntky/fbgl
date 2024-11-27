@@ -135,11 +135,6 @@ extern "C" {
  */
 char const *fbgl_name_info(void);
 char const *fbgl_version_info(void);
-void fbgl_enable_raw_mode(void);
-void fbgl_disable_raw_mode(void);
-void fbgl_cleanup(int sig);
-int fbgl_check_esc_key(void);
-void fbgl_set_signal_handlers(void);
 float fbgl_get_fps(void);
 
 /*Create and destroy methods*/
@@ -192,12 +187,7 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 /**
  * Keyboard
  */
-int fbgl_keyboard_init(void);
-void fbgl_keyboard_clean(void);
-void fbgl_keyboard_update(void);
-bool fbgl_key_down(unsigned char key);
-bool fbgl_key_pressed(unsigned char key);
-bool fbgl_key_released(unsigned char key);
+// Will refactor
 
 /**
  * Color Utilities
@@ -245,12 +235,6 @@ int fbgl_init(const char *device, fbgl_t *fb)
 		return -1;
 	}
 
-#ifdef FBGL_HIDE_CURSOR
-	fbgl_hide_cursor(fb->fd);
-	fbgl_set_signal_handlers();
-	fbgl_enable_raw_mode();
-#endif // FBGL_HIDE_CURSOR
-
 	fb->width = fb->vinfo.xres;
 	fb->height = fb->vinfo.yres;
 	fb->screen_size = fb->finfo.smem_len;
@@ -282,10 +266,6 @@ void fbgl_destroy(fbgl_t *fb)
 
 	close(fb->fd);
 	fb->fd = -1;
-
-#ifdef FBGL_HIDE_CURSOR
-	fbgl_disable_raw_mode();
-#endif // FBGL_HIDE_CURSOR
 }
 
 void fbgl_set_bg(fbgl_t *fb, uint32_t color)
@@ -318,75 +298,6 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 
 	const size_t index = y * fb->width + x;
 	fb->pixels[index] = color;
-}
-
-void fbgl_enable_raw_mode(void)
-{
-	struct termios raw;
-
-	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-		perror("tcgetattr");
-		exit(EXIT_FAILURE);
-	}
-	raw = orig_termios;
-	raw.c_lflag &= ~(ECHO | ICANON);
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-		perror("tcsetattr");
-		exit(EXIT_FAILURE);
-	}
-}
-
-void fbgl_disable_raw_mode(void)
-{
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
-		perror("tcsetattr");
-	}
-}
-
-void fbgl_cleanup(int sig)
-{
-	fbgl_disable_raw_mode();
-	printf("\033[2J\033[H"); // Clear the terminal screen and move the cursor to top-left
-	exit(sig);
-}
-
-int fbgl_check_esc_key(void)
-{
-	char c;
-	struct timeval tv = { 0, 0 }; // Timeout of 0, to poll immediately
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(STDIN_FILENO, &fds);
-
-	// Check if there's input available
-	if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) == -1) {
-		perror("select");
-		return 0;
-	}
-
-	if (FD_ISSET(STDIN_FILENO, &fds)) {
-		if (read(STDIN_FILENO, &c, 1) == -1) {
-			perror("read");
-			return 0;
-		}
-		return c == 27; // ASCII value of the `Esc` key
-	}
-
-	return 0;
-}
-
-void fbgl_set_signal_handlers(void)
-{
-	struct sigaction sa;
-	sa.sa_handler = fbgl_cleanup;
-	sa.sa_flags = 0;
-	sigemptyset(&sa.sa_mask);
-
-	if (sigaction(SIGINT, &sa, NULL) == -1 ||
-	    sigaction(SIGTERM, &sa, NULL) == -1) {
-		perror("sigaction");
-		exit(EXIT_FAILURE);
-	}
 }
 
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color,
@@ -798,85 +709,6 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 		// Move to the next character position
 		cursor_x += font->char_width;
 	}
-}
-
-int fbgl_keyboard_init(void)
-{
-    if (keyboard.is_initialized) {
-        return 0; // Already initialized
-    }
-
-    struct termios raw;
-
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
-        perror("tcgetattr");
-        return -1;
-    }
-
-    raw = orig_termios;
-    raw.c_lflag &= ~(ECHO | ICANON); // Disable echo and canonical mode
-    raw.c_cc[VMIN] = 0;             // Non-blocking read
-    raw.c_cc[VTIME] = 0;            // No timeout
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-        perror("tcsetattr");
-        return -1;
-    }
-
-    memset(&keyboard, 0, sizeof(fbgl_keyboard_t));
-    keyboard.is_initialized = true;
-    return 0;
-}
-
-void fbgl_keyboard_clean(void)
-{
-    if (!keyboard.is_initialized) {
-        return;
-    }
-
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
-        perror("tcsetattr");
-    }
-
-    keyboard.is_initialized = false;
-}
-
-void fbgl_keyboard_update(void)
-{
-    if (!keyboard.is_initialized) {
-        return;
-    }
-
-    // Copy current state to previous state
-    memcpy(keyboard.prev_keys, keyboard.keys, sizeof(keyboard.keys));
-
-    unsigned char c;
-    while (read(STDIN_FILENO, &c, 1) > 0) {
-
-        keyboard.keys[(unsigned char)c] = true;
-    }
-
-    // Reset keys that are not pressed
-    for (int i = 0; i < FBGL_MAX_KEYS; i++) {
-        if (!keyboard.keys[i]) {
-            keyboard.keys[i] = false;
-        }
-    }
-}
-
-
-bool fbgl_key_down(unsigned char key)
-{
-    return keyboard.keys[key];
-}
-
-bool fbgl_key_pressed(unsigned char key)
-{
-    return keyboard.keys[key] && !keyboard.prev_keys[key];
-}
-
-bool fbgl_key_released(unsigned char key)
-{
-    return !keyboard.keys[key] && keyboard.prev_keys[key];
 }
 
 #endif // FBGL_IMPLEMENTATION
