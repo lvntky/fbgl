@@ -16,35 +16,35 @@ int save_framebuffer_as_ppm(fbgl_t *fb, const char *filename)
 	}
 
 	// Write PPM header (P6 format - binary RGB)
-        fprintf(fp, "P6\n%u %u\n255\n", fb->width, fb->height);
+	fprintf(fp, "P6\n%u %u\n255\n", fb->width, fb->height);
 
-        // Allocate buffer for pixel data
-        uint8_t* pixel_buffer = malloc(fb->width * fb->height * 3);
-        if (!pixel_buffer) {
+	// Allocate buffer for pixel data
+	uint8_t *pixel_buffer = malloc(fb->width * fb->height * 3);
+	if (!pixel_buffer) {
 		perror("Memory allocation error");
 		fclose(fp);
 		return -1;
 	}
 
 	// Convert framebuffer to RGB
-        for (int32_t y = 0; y < fb->height; y++) {
-            for (int32_t x = 0; x < fb->width; x++) {
-                uint32_t pixel = fb->pixels[y * fb->width + x];
+	for (int32_t y = 0; y < fb->height; y++) {
+		for (int32_t x = 0; x < fb->width; x++) {
+			uint32_t pixel = fb->pixels[y * fb->width + x];
 
-                // Extract RGB components (assuming 32-bit ARGB or RGB)
-                uint8_t r = (pixel >> 16) & 0xFF;
-                uint8_t g = (pixel >> 8) & 0xFF;
-                uint8_t b = pixel & 0xFF;
+			// Extract RGB components (assuming 32-bit ARGB or RGB)
+			uint8_t r = (pixel >> 16) & 0xFF;
+			uint8_t g = (pixel >> 8) & 0xFF;
+			uint8_t b = pixel & 0xFF;
 
-                // Store in buffer for PPM
-                pixel_buffer[(y * fb->width + x) * 3] = r;
-                pixel_buffer[(y * fb->width + x) * 3 + 1] = g;
-                pixel_buffer[(y * fb->width + x) * 3 + 2] = b;
-            }
-        }
+			// Store in buffer for PPM
+			pixel_buffer[(y * fb->width + x) * 3] = r;
+			pixel_buffer[(y * fb->width + x) * 3 + 1] = g;
+			pixel_buffer[(y * fb->width + x) * 3 + 2] = b;
+		}
+	}
 
-        // Write pixel data
-        fwrite(pixel_buffer, 1, fb->width * fb->height * 3, fp);
+	// Write pixel data
+	fwrite(pixel_buffer, 1, fb->width * fb->height * 3, fp);
 
 	// Cleanup
 	free(pixel_buffer);
@@ -76,9 +76,6 @@ int main(int argc, char *argv[])
 	// Text to render
 	const char *text = "Hello, fbgl!";
 
-	// Calculate text width
-	size_t text_width = strlen(text) * 8;
-
 	// Calculate centered position
 	int x = (fb.width - 8) / 2;
 	int y = (fb.height - 16) / 2;
@@ -96,7 +93,7 @@ int main(int argc, char *argv[])
 	// Wait for a bit to show the image
 	size_t framerate = 30 * 30;
 	for (size_t i = 0; i < framerate; i++) {
-		usleep(50000);
+		nanosleep((struct timespec[]){ { 0, (int)5e7 } }, NULL);
 	}
 
 	// Cleanup

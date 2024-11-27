@@ -22,7 +22,7 @@ int main(void)
 					 &buffer);
 		i = (i + 1) % 360;
 		fbgl_draw_circle_filled(480, 540, 40, 0xFFFFFF, &buffer);
-		usleep(10000);
+		nanosleep((struct timespec[]){ { 0, 10000000 } }, NULL);
 	}
 
 	while (1) {
