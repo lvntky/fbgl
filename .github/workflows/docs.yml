@@ -35,10 +35,11 @@ jobs:
           echo "HTML_OUTPUT = html" >> Doxyfile
           echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
           echo "GENERATE_TREEVIEW = YES" >> Doxyfile
+          echo "FULL_SIDEBAR = NO" >> Doxyfile
+          echo "HTML_COLORSTYLE = LIGHT" >> Doxyfile
           
           # Override default Doxygen CSS with Awesome theme
-          echo "HTML_EXTRA_STYLESHEET = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css" >> Doxyfile
-          echo "HTML_HEADER = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
+          echo HTML_EXTRA_STYLESHEET  = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
           
           # Disable the default Doxygen stylesheet
           echo "DISABLE_INDEX = NO" >> Doxyfile
