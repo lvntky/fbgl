@@ -91,40 +91,12 @@ typedef struct fbgl_psf1_font {
 	uint16_t char_width; // Character width in pixels (always 8 for PSF1)
 } fbgl_psf1_font_t;
 
-typedef struct fbgl_keyboard {
-	bool keys[FBGL_MAX_KEYS]; // Current state of each key
-	bool prev_keys[FBGL_MAX_KEYS]; // Previous state of each key
-	bool is_initialized; // Track if keyboard is initialized
-} fbgl_keyboard_t;
-
 /**
  * Key state function and variables
  *
  */
-static struct termios orig_termios;
-static fbgl_keyboard_t keyboard = { 0 };
 static struct timespec previous_frame_time = { 0 };
 
-#ifdef FBGL_HIDE_CURSOR
-#include <linux/kd.h>
-int fbgl_hide_cursor(int fd)
-{
-	int tty_fd = open("/dev/tty0", O_RDWR);
-	if (tty_fd == -1) {
-		perror("Error opening /dev/tty0");
-		return -1;
-	}
-
-	if (ioctl(tty_fd, KDSETMODE, KD_GRAPHICS) == -1) {
-		perror("Error setting graphics mode");
-		close(tty_fd);
-		return -1;
-	}
-
-	close(tty_fd);
-	return 0;
-}
-#endif // FBGL_HIDE_CURSOR
 
 #ifdef __cplusplus
 extern "C" {
