@@ -1,66 +1,73 @@
-name: Generate and Deploy Doxygen Documentation with m.css
+name: Generate Documentation
 
 on:
   push:
-    branches:
-      - master  # Replace with your default branch if different
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build:
+  build-docs:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      # Step 2: Install Doxygen and Python
-      - name: Install Doxygen and Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
         run: |
+          pip install jinja2 Pygments
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz python3 python3-pip
+          sudo apt-get install -y doxygen
 
-      # Step 3: Clone m.css repository
       - name: Clone m.css
         run: |
-          git clone --depth 1 https://github.com/mosra/m.css.git docs/m.css
-
-      # Step 4: Create Doxyfile
-      - name: Create Doxyfile
+          git clone https://github.com/mosra/m.css.git
+          
+      - name: Prepare Doxyfile
         run: |
-          echo "PROJECT_NAME = fbgl" > Doxyfile
-          echo "PROJECT_NUMBER = 0.1.0" >> Doxyfile
-          echo "OUTPUT_DIRECTORY = docs" >> Doxyfile
-          echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
-          echo "INPUT = fbgl.h README.md" >> Doxyfile
-          echo "FILE_PATTERNS = *.h *.md" >> Doxyfile
-          echo "RECURSIVE = NO" >> Doxyfile
-          echo "GENERATE_HTML = YES" >> Doxyfile
-          echo "HTML_OUTPUT = html" >> Doxyfile
-          echo "GENERATE_LATEX = NO" >> Doxyfile
-          echo "GENERATE_MAN = NO" >> Doxyfile
-          echo "GENERATE_RTF = NO" >> Doxyfile
-          echo "QUIET = YES" >> Doxyfile
-          echo "MARKDOWN_SUPPORT = YES" >> Doxyfile
-          echo "LAYOUT_FILE = docs/m.css/documentation/doxygen.layout.xml" >> Doxyfile
-          echo "HTML_HEADER = docs/m.css/documentation/doxygen.header.html" >> Doxyfile
-          echo "HTML_FOOTER = docs/m.css/documentation/doxygen.footer.html" >> Doxyfile
-          echo "HTML_EXTRA_STYLESHEET = docs/m.css/documentation/doxygen.extra.css" >> Doxyfile
-          echo "HTML_EXTRA_FILES = docs/m.css/documentation/doxygen.extra.js" >> Doxyfile
-          echo "HTML_DYNAMIC_SECTIONS = YES" >> Doxyfile
-
-      # Step 5: Run Doxygen
-      - name: Run Doxygen
-        run: doxygen Doxyfile
-
-      # Step 6: Process HTML with m.css
-      - name: Apply m.css
+          doxygen -g Doxyfile
+          
+          # Configure Doxyfile for m.css and project specifics
+          sed -i 's/PROJECT_NAME.*=.*/PROJECT_NAME           = "fbgl"/g' Doxyfile
+          sed -i 's/INPUT.*=.*/INPUT                  = README.md fbhl.h/g' Doxyfile
+          sed -i 's/USE_MDFILE_AS_MAINPAGE.*=.*/USE_MDFILE_AS_MAINPAGE = README.md/g' Doxyfile
+          sed -i 's/EXTRACT_ALL.*=.*/EXTRACT_ALL            = YES/g' Doxyfile
+          sed -i 's/RECURSIVE.*=.*/RECURSIVE            = YES/g' Doxyfile
+          sed -i 's/GENERATE_HTML.*=.*/GENERATE_HTML        = NO/g' Doxyfile
+          
+      - name: Generate Documentation with m.css
         run: |
-          python3 docs/m.css/documentation/doxygen.py Doxyfile
-
-      # Step 7: Deploy to GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+          python3 m.css/documentation/doxygen.py Doxyfile
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs
+          path: 'documentation'
+          
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-docs
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
