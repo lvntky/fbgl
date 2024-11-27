@@ -20,6 +20,12 @@ char *float_to_string(float value)
 
 int main(int argc, char **argv)
 {
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s <texture_path> <font_path>\n",
+			argv[0]);
+		return EXIT_FAILURE;
+	}
+
 	// Initialize framebuffer
 	fbgl_t framebuffer;
 	if (fbgl_init(NULL, &framebuffer) != 0) {
@@ -78,7 +84,11 @@ int main(int argc, char **argv)
 		fbgl_render_psf1_text(&framebuffer, font, fps, 100, 0,
 				      0xFF0000);
 
-		usleep(50000); // Delay to make the marquee effect visible (adjust as needed)
+		free(fps);
+
+		nanosleep(
+			(struct timespec[]){ { 0, (int)5e7 } },
+			NULL); // Delay to make the marquee effect visible (adjust as needed)
 		framesize--;
 	}
 

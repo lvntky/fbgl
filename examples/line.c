@@ -1,7 +1,7 @@
 #define FBGL_IMPLEMENTATION
 #include "fbgl.h"
 
-int main(int argc, char *argv[])
+int main()
 {
 	fbgl_t buffer;
 	if (fbgl_init("/dev/fb0", &buffer) == -1) {
@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 1890; i++) {
 		start.x = i;
 		fbgl_draw_line(start, end, 0xFFFFFF, &buffer);
-		usleep(1000); // sleep for 1 millisecond
+		nanosleep((struct timespec[]){ { 0, 10000000 } }, NULL);
 	}
 	fbgl_draw_line(start, end, 0x000000, &buffer);
 

@@ -1,7 +1,7 @@
 #define FBGL_IMPLEMENTATION
 #include "fbgl.h"
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	fbgl_t buffer;
 	if (fbgl_init("/dev/fb0", &buffer) == -1) {

@@ -6,19 +6,25 @@
 
 int main(int argc, char **argv)
 {
-	// Initialize framebuffer
-	fbgl_t framebuffer;
-	if (fbgl_init(NULL, &framebuffer) != 0) {
-		fprintf(stderr, "Failed to initialize framebuffer.\n");
+	if (argc < 2) {
+		fprintf(stderr, "Usage: %s <texture_path>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
 	// Load a TGA texture
 	const char *texture_path = argv[1];
+
 	fbgl_tga_texture_t *texture = fbgl_load_tga_texture(texture_path);
 	if (!texture) {
 		fprintf(stderr, "Failed to load texture.\n");
-		fbgl_destroy(&framebuffer);
+
+		return EXIT_FAILURE;
+	}
+
+	// Initialize framebuffer
+	fbgl_t framebuffer;
+	if (fbgl_init(NULL, &framebuffer) != 0) {
+		fprintf(stderr, "Failed to initialize framebuffer.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -55,8 +61,10 @@ int main(int argc, char **argv)
 		    texture_y + texture->height >= framebuffer.height) {
 			dy = -dy; // Reverse vertical direction when hitting the top or bottom edge
 		}
+		nanosleep(
+			(struct timespec[]){ { 0, (int)5e7 } },
+			NULL); // Delay to make the marquee effect visible (adjust as needed)
 
-		usleep(50000); // Delay to make the marquee effect visible (adjust as needed)
 		framesize--;
 	}
 

@@ -2,7 +2,7 @@
 #include "fbgl.h"
 #include <stdio.h>
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	fbgl_t fb;
 	fbgl_init("/dev/fb0", &fb);

@@ -1,7 +1,7 @@
 #define FBGL_IMPLEMENTATION
 #include "fbgl.h"
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	fbgl_t buffer;
 	if (fbgl_init("/dev/fb0", &buffer) == -1) {
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 			color_index = 0;
 		}
 
-		usleep(50000); // Delay to make the animation visible (adjust as needed)
+		nanosleep((struct timespec[]){ { 0, (int)5e7 } }, NULL);
 	}
 
 	fbgl_destroy(&buffer);
