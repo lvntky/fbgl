@@ -26,23 +26,23 @@ jobs:
         run: |
           git clone https://github.com/jothepro/doxygen-awesome-css.git doxygen-awesome
 
-      - name: Create Doxyfile
+      - name: Create and Configure Doxyfile
         run: |
           doxygen -g Doxyfile
           
-          # Customize Doxyfile settings
-          sed -i 's/PROJECT_NAME           = "My Project"/PROJECT_NAME           = "fbgl"/g' Doxyfile
-          sed -i 's/PROJECT_NUMBER         =/PROJECT_NUMBER         = 0.1.0/g' Doxyfile
-          sed -i 's/OUTPUT_DIRECTORY       =/OUTPUT_DIRECTORY       = docs/g' Doxyfile
-          sed -i 's/INPUT                  =/INPUT                  = fbgl.h README.md/g' Doxyfile
-          sed -i 's/HTML_OUTPUT            = html/HTML_OUTPUT            = ./public/docs/html/g' Doxyfile
+          # Customize Doxyfile settings with proper sed escaping
+          sed -i 's/PROJECT_NAME *=.*$/PROJECT_NAME = "fbgl"/g' Doxyfile
+          sed -i 's/PROJECT_NUMBER *=.*$/PROJECT_NUMBER = 0.1.0/g' Doxyfile
+          sed -i 's/OUTPUT_DIRECTORY *=.*$/OUTPUT_DIRECTORY = docs/g' Doxyfile
+          sed -i 's/INPUT *=.*$/INPUT = fbgl.h README.md/g' Doxyfile
+          sed -i 's/HTML_OUTPUT *=.*$/HTML_OUTPUT = .\/public\/docs\/html/g' Doxyfile
           
           # Set homepage to README.md
-          echo "USE_MDFILE_AS_MAINPAGE   = README.md" >> Doxyfile
+          echo "USE_MDFILE_AS_MAINPAGE = README.md" >> Doxyfile
           
-          # Configure Doxygen Awesome theme
-          echo "HTML_EXTRA_STYLESHEET    = doxygen-awesome/doxygen-awesome.css" >> Doxyfile
-          echo "HTML_COLORSTYLE          = LIGHT" >> Doxyfile
+          # Configure Doxygen Awesome theme with dark mode
+          echo "HTML_EXTRA_STYLESHEET = doxygen-awesome/doxygen-awesome.css doxygen-awesome/doxygen-awesome-dark-mode.css" >> Doxyfile
+          echo "HTML_COLORSTYLE = DARK" >> Doxyfile
 
       - name: Generate Documentation
         run: doxygen Doxyfile
