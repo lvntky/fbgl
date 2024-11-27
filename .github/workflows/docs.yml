@@ -38,10 +38,7 @@ jobs:
           echo "FULL_SIDEBAR = NO" >> Doxyfile
           echo "HTML_COLORSTYLE = LIGHT" >> Doxyfile
           
-          # Override default Doxygen CSS with Awesome theme
-          echo HTML_EXTRA_STYLESHEET  = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
-          
-          # Disable the default Doxygen stylesheet
+          echo "HTML_EXTRA_STYLESHEET = https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome.css https://cdn.jsdelivr.net/gh/jothepro/doxygen-awesome-css@v2.3.4/doxygen-awesome-darkmode-toggle.js" >> Doxyfile
           echo "DISABLE_INDEX = NO" >> Doxyfile
           echo "HTML_DYNAMIC_SECTIONS = YES" >> Doxyfile
 
