@@ -27,7 +27,6 @@
 #define VERSION "0.1.0"
 #define NAME "FBGL"
 #define DEFAULT_FB "/dev/fb0"
-#define FBGL_MAX_KEYS 256 // Maximum number of keys to track
 
 #include <fcntl.h>
 #include <linux/fb.h>
@@ -44,11 +43,6 @@
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
-
-#ifdef FBGL_USE_FREETYPE
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#endif // FBGL_USE_FREETYPE
 
 /**
  * Structs
@@ -91,11 +85,31 @@ typedef struct fbgl_psf1_font {
 	uint16_t char_width; // Character width in pixels (always 8 for PSF1)
 } fbgl_psf1_font_t;
 
+typedef enum fbgl_key {
+	FBGL_KEY_NONE = 0,
+	FBGL_KEY_UP,
+	FBGL_KEY_DOWN,
+	FBGL_KEY_LEFT,
+	FBGL_KEY_RIGHT,
+	FBGL_KEY_ESCAPE,
+	FBGL_KEY_ENTER,
+	FBGL_KEY_SPACE,
+
+} fbgl_key_t;
+
+typedef struct fbgl_keyboard_state {
+	bool is_key_down;
+	fbgl_key_t current_key;
+	bool special_key_pressed;
+} fbgl_keyboard_state_t;
+
 /**
  * Key state function and variables
  *
  */
 static struct timespec previous_frame_time = { 0 };
+static struct termios orig_termios;
+static fbgl_keyboard_state_t g_keyboard_state = { 0 };
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,7 +172,10 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 /**
  * Keyboard
  */
-// Will refactor
+int fbgl_keyboard_init(void);
+void fbgl_destroy_keyboard(void);
+fbgl_key_t fbgl_get_key(void);
+bool fbgl_is_key_pressed(fbgl_key_t key);
 
 /**
  * Color Utilities
@@ -171,6 +188,42 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 	((uint32_t)(((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | \
 		    (uint8_t)(b * 255)))
 #define FBGL_F32RGBA_TO_U32(r, g, b, a) ((uint32_t)(((uint8_t)(a * 255) << 24) | ((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | (uint8_t)(b * 255))
+
+// Inside functions
+static void i_fbgl_die(const char *s);
+static void i_fbgl_disable_raw_mode();
+static void i_fbgl_enable_raw_mode();
+
+static void i_fbgl_die(const char *s)
+{
+	perror(s);
+	exit(1);
+}
+
+static void i_fbgl_enable_raw_mode()
+{
+	if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+		i_fbgl_die("tcgetattr");
+	}
+	atexit(i_fbgl_disable_raw_mode);
+	struct termios raw = orig_termios;
+	raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+	raw.c_oflag &= ~(OPOST);
+	raw.c_cflag |= (CS8);
+	raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+	raw.c_cc[VMIN] = 0;
+	raw.c_cc[VTIME] = 1;
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+		i_fbgl_die("tcsetattr");
+	}
+}
+
+static void i_fbgl_disable_raw_mode()
+{
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
+		i_fbgl_die("tcesetattr");
+	}
+}
 
 #ifdef FBGL_IMPLEMENTATION
 
@@ -691,6 +744,102 @@ void fbgl_render_psf1_text(fbgl_t *fb, fbgl_psf1_font_t *font, const char *text,
 		// Move to the next character position
 		cursor_x += font->char_width;
 	}
+}
+
+int fbgl_keyboard_init(void)
+{
+	i_fbgl_enable_raw_mode();
+
+	// Initialize keyboard state
+	g_keyboard_state.is_key_down = false;
+	g_keyboard_state.current_key = FBGL_KEY_NONE;
+	g_keyboard_state.special_key_pressed = false;
+
+	return 0;
+}
+
+void fbgl_destroy_keyboard(void)
+{
+	i_fbgl_disable_raw_mode();
+}
+fbgl_key_t fbgl_get_key(void)
+{
+	char c;
+	ssize_t bytes_read = read(STDIN_FILENO, &c, 1);
+
+	if (bytes_read <= 0) {
+		return FBGL_KEY_NONE;
+	}
+
+	// Handle escape sequences for special keys
+	if (c == 27) {
+		char seq[3];
+		if (read(STDIN_FILENO, &seq[0], 1) != 1)
+			return FBGL_KEY_ESCAPE;
+		if (read(STDIN_FILENO, &seq[1], 1) != 1)
+			return FBGL_KEY_ESCAPE;
+
+		if (seq[0] == '[') {
+			switch (seq[1]) {
+			case 'A':
+				return FBGL_KEY_UP;
+			case 'B':
+				return FBGL_KEY_DOWN;
+			case 'C':
+				return FBGL_KEY_RIGHT;
+			case 'D':
+				return FBGL_KEY_LEFT;
+			}
+		}
+
+		return FBGL_KEY_NONE;
+	}
+
+	// Handle direct key presses
+	switch (c) {
+	case 10: // Enter key
+		return FBGL_KEY_ENTER;
+	case 32: // Space key
+		return FBGL_KEY_SPACE;
+	case 'w':
+	case 'W':
+		return FBGL_KEY_UP;
+	case 's':
+	case 'S':
+		return FBGL_KEY_DOWN;
+	case 'a':
+	case 'A':
+		return FBGL_KEY_LEFT;
+	case 'd':
+	case 'D':
+		return FBGL_KEY_RIGHT;
+	case 27: // Escape key
+		return FBGL_KEY_ESCAPE;
+	}
+
+	return FBGL_KEY_NONE;
+}
+
+bool fbgl_is_key_pressed(fbgl_key_t key)
+{
+	// Use select() for non-blocking input check
+	fd_set read_fds;
+	struct timeval timeout;
+
+	FD_ZERO(&read_fds);
+	FD_SET(STDIN_FILENO, &read_fds);
+
+	// Set a very short timeout
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+
+	// Check if there's input available
+	if (select(STDIN_FILENO + 1, &read_fds, NULL, NULL, &timeout) > 0) {
+		fbgl_key_t pressed_key = fbgl_get_key();
+		return pressed_key == key;
+	}
+
+	return false;
 }
 
 #endif // FBGL_IMPLEMENTATION
