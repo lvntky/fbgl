@@ -45,8 +45,8 @@ while also defining the `FBGL_IMPLEMENTATION` macro in one of your source files.
 Here’s a simple program that initializes the framebuffer, clears it to a blue color, and draws a red diagonal line.
 
 ```c
-#include "fbgl.h"
 #define FBGL_IMPLEMENTATION
+#include "fbgl.h"
 #include <stdio.h>
 
 int main()
