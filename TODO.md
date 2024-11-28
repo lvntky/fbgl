@@ -12,7 +12,7 @@
   - [x] Support outlined versions of shapes.
 - [ ] Implement bitmap rendering:
   - [x] Render 2D images (tga) to the framebuffer.
-  - [ ] Support transparency via alpha channels.
+  - [x] Support transparency via alpha channels.
   - [ ] Support transparency via a key color.
 - [x] Implement text rendering using psf fonts.
 
