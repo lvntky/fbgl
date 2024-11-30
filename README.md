@@ -198,6 +198,10 @@ PSF Text in fbgl
 
 ![text](./docs/text.png)
 
+Simple ray casting demo
+
+![ray](./docs/ray_demo.gif)
+
 ---
 
 ## Contact
