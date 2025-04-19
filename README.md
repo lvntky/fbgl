@@ -204,6 +204,18 @@ Simple ray casting demo
 
 ---
 
+## Testing on virtual framebuffer
+If you want to test your programs that made with FBGL without accelerate you user privilages on Linux, fallow these streps:
+
+```sh
+chmod +x fbgl_test_virtual_fb.sh
+./fbgl_test_virtual_fb.sh
+```
+Then, open a VNC viewer (like TigerVNC), connect to:
+```sh
+localhost:5900
+```
+
 ## Contact
 
 If you have questions or suggestions, feel free to reach out via GitHub or email.
