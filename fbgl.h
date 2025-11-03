@@ -189,10 +189,23 @@ bool fbgl_is_key_pressed(fbgl_key_t key);
 		    (uint8_t)(b * 255)))
 #define FBGL_F32RGBA_TO_U32(r, g, b, a) ((uint32_t)(((uint8_t)(a * 255) << 24) | ((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | (uint8_t)(b * 255))
 
+#define FBGL_INLINE static inline
+
 // Inside functions
 static void i_fbgl_die(const char *s);
 static void i_fbgl_disable_raw_mode();
 static void i_fbgl_enable_raw_mode();
+FBGL_INLINE i_fbgl_abs_int(int x);
+
+	FBGL_INLINE i_fbgl_sqrt_int(int x);
+
+	FBGL_INLINE i_fbgl_abs_int(int x) {
+		return x < 0 ? -x : x;
+	}
+
+	FBGL_INLINE i_fbgl_sqrt_int(int x) {
+		return x * x;
+	}
 
 static void i_fbgl_die(const char *s)
 {
@@ -330,8 +343,8 @@ void fbgl_put_pixel(int x, int y, uint32_t color, fbgl_t *fb)
 void fbgl_draw_line(fbgl_point_t x, fbgl_point_t y, uint32_t color,
 		    fbgl_t *buffer)
 {
-	const int32_t dx = abs(y.x - x.x);
-	const int32_t dy = abs(y.y - x.y);
+	const int32_t dx = i_fbgl_abs_int(y.x - x.x);
+	const int32_t dy = i_fbgl_abs_int(y.y - x.y);
 
 	const int32_t sx = (x.x < y.x) ? 1 : -1;
 	const int32_t sy = (x.y < y.y) ? 1 : -1;
@@ -435,7 +448,7 @@ void fbgl_draw_circle_filled(int x, int y, int radius, uint32_t color,
 			     fbgl_t *fb)
 {
 	for (int yy = -radius; yy <= radius; ++yy) {
-		int half_width = (int)sqrt(radius * radius - yy * yy);
+		int half_width = (int)i_fbgl_sqrt_int(radius * radius - yy * yy);
 
 		int row_start = x - half_width;
 		int row_end = x + half_width;
