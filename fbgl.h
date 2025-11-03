@@ -197,15 +197,17 @@ static void i_fbgl_disable_raw_mode();
 static void i_fbgl_enable_raw_mode();
 FBGL_INLINE i_fbgl_abs_int(int x);
 
-	FBGL_INLINE i_fbgl_sqrt_int(int x);
+FBGL_INLINE i_fbgl_sqrt_int(int x);
 
-	FBGL_INLINE i_fbgl_abs_int(int x) {
-		return x < 0 ? -x : x;
-	}
+FBGL_INLINE i_fbgl_abs_int(int x)
+{
+	return x < 0 ? -x : x;
+}
 
-	FBGL_INLINE i_fbgl_sqrt_int(int x) {
-		return x * x;
-	}
+FBGL_INLINE i_fbgl_sqrt_int(int x)
+{
+	return x * x;
+}
 
 static void i_fbgl_die(const char *s)
 {
@@ -448,7 +450,8 @@ void fbgl_draw_circle_filled(int x, int y, int radius, uint32_t color,
 			     fbgl_t *fb)
 {
 	for (int yy = -radius; yy <= radius; ++yy) {
-		int half_width = (int)i_fbgl_sqrt_int(radius * radius - yy * yy);
+		int half_width =
+			(int)i_fbgl_sqrt_int(radius * radius - yy * yy);
 
 		int row_start = x - half_width;
 		int row_end = x + half_width;
