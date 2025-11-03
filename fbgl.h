@@ -8,6 +8,7 @@
 //
 //
 // History:
+//  - 1.0.0 Eliminated Math Library Dependency, first stable version
 //  - 0.1.0 First public release
 //
 // Status:
