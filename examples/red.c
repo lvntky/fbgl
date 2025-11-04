@@ -5,7 +5,7 @@
 int main(void)
 {
 	fbgl_t fb;
-	fbgl_init("/dev/fb0", &fb);
+	fbgl_init(NULL, &fb);
 	fbgl_set_bg(&fb, 0x00FF0000);
 	while (1) {
 	}

@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	}
 
 	fbgl_t fb;
-	fbgl_init("/dev/fb0", &fb);
+	fbgl_init(NULL, &fb);
 	fbgl_set_bg(&fb, 0xFFFFFF);
 
 	// Load font

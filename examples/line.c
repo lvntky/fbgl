@@ -4,7 +4,7 @@
 int main()
 {
 	fbgl_t buffer;
-	if (fbgl_init("/dev/fb0", &buffer) == -1) {
+	if (fbgl_init(NULL, &buffer) == -1) {
 		fprintf(stdout, "Error: could not open framebuffer device\n");
 		return -1;
 	}
