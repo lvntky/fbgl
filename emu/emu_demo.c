@@ -1,0 +1,26 @@
+#define FBGL_IMPLEMENTATION
+#include "../fbgl.h"
+
+int main()
+{
+    fbgl_t buffer;
+    if (fbgl_init(NULL, &buffer) == -1) {
+        fprintf(stdout, "Error: could not open framebuffer device\n");
+        return -1;
+    }
+    
+    fbgl_set_bg(&buffer, 0x00FF0000);
+    
+    fbgl_point_t start = { 0, 0 };
+    fbgl_point_t end = { 799, 599 };
+    
+    for (int i = 0; i < buffer.vinfo.xres; i++) {
+        start.x = i;
+        fbgl_draw_line(start, end, 0xFFFFFF, &buffer);
+        nanosleep((struct timespec[]){ { 0, 10000000 } }, NULL);
+    }
+    
+    sleep(2);
+
+    return 0;
+}
