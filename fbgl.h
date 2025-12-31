@@ -1,4 +1,4 @@
-// fbgl.h - v0.1.0 - public domain Levent Kaya 2024
+// fbgl.h - v1.1.1 - public domain Levent Kaya 2024
 // FBGL - Framebuffer Graphics Library
 //
 // This file provides both the interface and the implementation.
@@ -8,6 +8,7 @@
 //
 //
 // History:
+//  - 1.1.1 Minor patch fixing FBGL_INLINE macro
 //  - 1.0.0 Eliminated Math Library Dependency, first stable version
 //  - 0.1.0 First public release
 //
@@ -25,7 +26,7 @@
 #ifndef __FBGL_H__
 #define __FBGL_H__
 
-#define VERSION "0.1.0"
+#define VERSION "1.1.1"
 #define NAME "FBGL"
 #define DEFAULT_FB "/dev/fb0"
 
@@ -190,22 +191,32 @@ bool fbgl_is_key_pressed(fbgl_key_t key);
 		    (uint8_t)(b * 255)))
 #define FBGL_F32RGBA_TO_U32(r, g, b, a) ((uint32_t)(((uint8_t)(a * 255) << 24) | ((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | (uint8_t)(b * 255))
 
-#define FBGL_INLINE static inline
+
+
+#ifndef FBGL_INLINE
+#  if defined(__GNUC__) || defined(__clang__)
+#    define FBGL_INLINE static inline __attribute__((always_inline))
+#  else
+#    define FBGL_INLINE static inline
+#  endif
+#endif
+	
+	
 
 // Inside functions
 static void i_fbgl_die(const char *s);
 static void i_fbgl_disable_raw_mode();
 static void i_fbgl_enable_raw_mode();
-FBGL_INLINE i_fbgl_abs_int(int x);
+FBGL_INLINE int i_fbgl_abs_int(int x);
 
-FBGL_INLINE i_fbgl_sqrt_int(int x);
+FBGL_INLINE int i_fbgl_sqrt_int(int x);
 
-FBGL_INLINE i_fbgl_abs_int(int x)
+FBGL_INLINE int i_fbgl_abs_int(int x)
 {
 	return x < 0 ? -x : x;
 }
 
-FBGL_INLINE i_fbgl_sqrt_int(int x)
+FBGL_INLINE int i_fbgl_sqrt_int(int x)
 {
 	return x * x;
 }
@@ -242,7 +253,7 @@ static void i_fbgl_disable_raw_mode()
 }
 
 #ifdef FBGL_IMPLEMENTATION
-
+	
 char const *fbgl_name_info(void)
 {
 	return NAME;
