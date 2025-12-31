@@ -191,17 +191,13 @@ bool fbgl_is_key_pressed(fbgl_key_t key);
 		    (uint8_t)(b * 255)))
 #define FBGL_F32RGBA_TO_U32(r, g, b, a) ((uint32_t)(((uint8_t)(a * 255) << 24) | ((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | (uint8_t)(b * 255))
 
-
-
 #ifndef FBGL_INLINE
-#  if defined(__GNUC__) || defined(__clang__)
-#    define FBGL_INLINE static inline __attribute__((always_inline))
-#  else
-#    define FBGL_INLINE static inline
-#  endif
+#if defined(__GNUC__) || defined(__clang__)
+#define FBGL_INLINE static inline __attribute__((always_inline))
+#else
+#define FBGL_INLINE static inline
 #endif
-	
-	
+#endif
 
 // Inside functions
 static void i_fbgl_die(const char *s);
@@ -253,7 +249,7 @@ static void i_fbgl_disable_raw_mode()
 }
 
 #ifdef FBGL_IMPLEMENTATION
-	
+
 char const *fbgl_name_info(void)
 {
 	return NAME;
