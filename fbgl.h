@@ -189,7 +189,6 @@ bool fbgl_is_key_pressed(fbgl_key_t key);
 #define FBGL_F32RGB_TO_U32(r, g, b)                                          \
 	((uint32_t)(((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | \
 		    (uint8_t)(b * 255)))
-#define FBGL_F32RGBA_TO_U32(r, g, b, a) ((uint32_t)(((uint8_t)(a * 255) << 24) | ((uint8_t)(r * 255) << 16) | ((uint8_t)(g * 255) << 8) | (uint8_t)(b * 255))
 
 #ifndef FBGL_INLINE
 #if defined(__GNUC__) || defined(__clang__)
@@ -246,6 +245,19 @@ static void i_fbgl_disable_raw_mode()
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) {
 		i_fbgl_die("tcesetattr");
 	}
+}
+
+FBGL_INLINE uint32_t fbgl_f32rgba_to_u32(float r, float g, float b, float a)
+{
+#define CLAMP01(x) ((x) < 0.0f ? 0.0f : ((x) > 1.0f ? 1.0f : (x)))
+
+	uint8_t R = (uint8_t)(CLAMP01(r) * 255.0f + 0.5f);
+	uint8_t G = (uint8_t)(CLAMP01(g) * 255.0f + 0.5f);
+	uint8_t B = (uint8_t)(CLAMP01(b) * 255.0f + 0.5f);
+	uint8_t A = (uint8_t)(CLAMP01(a) * 255.0f + 0.5f);
+
+	return ((uint32_t)A << 24) | ((uint32_t)R << 16) | ((uint32_t)G << 8) |
+	       (uint32_t)B;
 }
 
 #ifdef FBGL_IMPLEMENTATION

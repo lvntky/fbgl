@@ -4,7 +4,7 @@
 
 > v1.1.2 - critical bug fixes
 
-- [ ] Fix missing closing parenthesis in `FBGL_F32RGBA_TO_U32` macro — currently fails to compile `bug`
+- [x] Fix missing closing parenthesis in `FBGL_F32RGBA_TO_U32` macro — currently fails to compile `bug`
 - [ ] Fix `fbgl_draw_line` termination condition — breaks for lines with negative direction (right-to-left or bottom-to-top) `bug`
 - [ ] Fix `i_fbgl_sqrt_int` — currently computes x\*x (square) not sqrt, corrupting filled circle rendering `bug`
 - [ ] Implement missing `fbgl_clear` — declared in header but has no definition; rename or alias from `fbgl_set_bg` `bug`
